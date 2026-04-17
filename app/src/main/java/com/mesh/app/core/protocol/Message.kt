@@ -44,6 +44,7 @@ data class Message(
                 size = 0,
                 channel_id = channelId
             )
+            // TODO: This computes serialized size while size=0; final serialized form is usually a few bytes larger once size is populated.
             val size = json.encodeToString(base).toByteArray().size
             return base.copy(size = size)
         }
