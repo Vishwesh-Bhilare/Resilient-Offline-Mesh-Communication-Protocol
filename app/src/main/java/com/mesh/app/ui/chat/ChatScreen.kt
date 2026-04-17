@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mesh.app.core.protocol.Message
 import com.mesh.app.ui.components.MessageItem
 
 @Composable
@@ -32,7 +31,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel()) {
     Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
         Text("Mesh Chat", style = MaterialTheme.typography.headlineSmall)
         LazyColumn(modifier = Modifier.weight(1f), reverseLayout = false) {
-            items(messages.sortedWith(compareBy { it.hlc })) { message ->
+            items(messages) { message ->
                 MessageItem(message)
             }
         }
