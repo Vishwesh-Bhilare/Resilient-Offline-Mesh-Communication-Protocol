@@ -17,6 +17,8 @@ data class HelloPayload(
 class HelloPhase {
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
 
+    // Full bloom filter (120 bytes → ~160 Base64 chars) is included.
+    // At MTU=512, usable ATT payload = 509 bytes. Total JSON ≈ 290 bytes. Fits in one write.
     fun encode(deviceId: String, bloomFilter: BloomFilter): ByteArray = json.encodeToString(
         HelloPayload(
             deviceId = deviceId,

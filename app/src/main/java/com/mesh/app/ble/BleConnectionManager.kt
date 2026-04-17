@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattServer
 import android.bluetooth.BluetoothGattServerCallback
 import android.bluetooth.BluetoothGattService
@@ -28,10 +29,12 @@ import com.mesh.app.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -51,12 +54,13 @@ class BleConnectionManager @Inject constructor(
     private val adapter: BluetoothAdapter? get() = bluetoothManager.adapter
     private var gattServer: BluetoothGattServer? = null
     private var meshService: BluetoothGattService? = null
+    private var peerCollectionJob: Job? = null
     private val activeConnections = ConcurrentHashMap<String, Boolean>()
 
     @SuppressLint("MissingPermission")
     fun start() {
         startServer()
-        scope.launch {
+        peerCollectionJob = scope.launch {
             scanner.peers.collect { peer ->
                 launch {
                     if (activeConnections.containsKey(peer.address)) return@launch
@@ -70,6 +74,8 @@ class BleConnectionManager @Inject constructor(
     @SuppressLint("MissingPermission")
     fun stop() {
         runCatching { gattServer?.close() }
+        peerCollectionJob?.cancel()
+        peerCollectionJob = null
     }
 
     @SuppressLint("MissingPermission")
@@ -94,10 +100,17 @@ class BleConnectionManager @Inject constructor(
         val perms = BluetoothGattCharacteristic.PERMISSION_READ or BluetoothGattCharacteristic.PERMISSION_WRITE
 
         val service = BluetoothGattService(Constants.SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY)
+        val cccdUuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+        val transferChar = BluetoothGattCharacteristic(Constants.TRANSFER_CHAR_UUID, props, perms)
+        val cccd = BluetoothGattDescriptor(
+            cccdUuid,
+            BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
+        )
+        transferChar.addDescriptor(cccd)
         service.addCharacteristic(BluetoothGattCharacteristic(Constants.HELLO_CHAR_UUID, props, perms))
         service.addCharacteristic(BluetoothGattCharacteristic(Constants.DIFF_CHAR_UUID, props, perms))
         service.addCharacteristic(BluetoothGattCharacteristic(Constants.REQUEST_CHAR_UUID, props, perms))
-        service.addCharacteristic(BluetoothGattCharacteristic(Constants.TRANSFER_CHAR_UUID, props, perms))
+        service.addCharacteristic(transferChar)
         meshService = service
         gattServer?.addService(service)
     }
@@ -176,6 +189,29 @@ class BleConnectionManager @Inject constructor(
                 val hello = gatt.getService(Constants.SERVICE_UUID)?.getCharacteristic(Constants.HELLO_CHAR_UUID)
                 if (hello != null && !gatt.readCharacteristic(hello)) {
                     gatt.disconnect()
+                }
+                return
+            }
+            if (characteristic.uuid == Constants.REQUEST_CHAR_UUID) {
+                val transferChar = gatt.getService(Constants.SERVICE_UUID)
+                    ?.getCharacteristic(Constants.TRANSFER_CHAR_UUID)
+                if (transferChar == null) {
+                    gatt.disconnect()
+                    return
+                }
+                gatt.setCharacteristicNotification(transferChar, true)
+                val cccd = transferChar.getDescriptor(
+                    UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+                )
+                if (cccd != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        gatt.writeDescriptor(cccd, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        cccd.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                        @Suppress("DEPRECATION")
+                        gatt.writeDescriptor(cccd)
+                    }
                 }
                 return
             }
@@ -323,6 +359,21 @@ class BleConnectionManager @Inject constructor(
                     }
                 }
             }
+            if (responseNeeded) {
+                gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, null)
+            }
+        }
+
+        @SuppressLint("MissingPermission")
+        override fun onDescriptorWriteRequest(
+            device: BluetoothDevice,
+            requestId: Int,
+            descriptor: BluetoothGattDescriptor,
+            preparedWrite: Boolean,
+            responseNeeded: Boolean,
+            offset: Int,
+            value: ByteArray
+        ) {
             if (responseNeeded) {
                 gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, null)
             }
