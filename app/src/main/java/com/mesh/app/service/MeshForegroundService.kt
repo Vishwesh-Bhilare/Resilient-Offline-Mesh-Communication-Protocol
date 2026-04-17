@@ -38,7 +38,7 @@ class MeshForegroundService : Service() {
         super.onCreate()
         startForeground(1001, buildNotification())
         val pm = getSystemService(POWER_SERVICE) as PowerManager
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "mesh:ble").apply { acquire(10 * 60 * 1000L) }
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "mesh:ble").apply { acquire() }
         advertiser.start()
         scanner.start(scope)
         connectionManager.start()
