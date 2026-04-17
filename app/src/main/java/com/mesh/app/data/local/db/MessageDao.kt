@@ -30,6 +30,9 @@ interface MessageDao {
     @Query("SELECT id FROM messages")
     suspend fun getAllIds(): List<String>
 
+    @Query("SELECT COUNT(*) FROM messages WHERE id = :id")
+    suspend fun countById(id: String): Int
+
     @Query("SELECT * FROM messages WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<MessageEntity>
 

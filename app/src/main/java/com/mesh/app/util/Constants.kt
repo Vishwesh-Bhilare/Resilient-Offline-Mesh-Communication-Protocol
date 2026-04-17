@@ -8,7 +8,9 @@ object Constants {
     const val MAX_HOPS = 10
     const val MAX_DB_SIZE_BYTES = 50 * 1024 * 1024L
     const val CHUNK_DATA_SIZE = 476
-    const val BLOOM_FILTER_BYTES = 20
+    const val BLE_BLOOM_ADVERTISE_BYTES = 20
+    // Sized for ~100 messages at ~1% false positive rate: m = -n*ln(p)/(ln2)^2 ≈ 958 bits → 120 bytes.
+    const val BLOOM_FILTER_BYTES = 120
     const val IN_PROGRESS_TIMEOUT_MS = 10 * 60 * 1000L
     const val GATEWAY_BASE_URL = "https://your-gateway.example.com/"
     const val BLOOM_HASHES = 7
@@ -16,8 +18,8 @@ object Constants {
     const val BLE_SCAN_ACTIVE_MS = 5_000L
     const val BLE_SCAN_PAUSE_MS = 25_000L
     const val BLE_MANUFACTURER_ID = 0x1234
-    // Layout: [0..3]=device prefix (4), [4]=flags (1), [5..24]=bloom filter (20), [25]=has_internet (1), [26]=protocol_version (1).
-    // Total = 27 bytes and scanner uses copyOfRange(5, 25) for the 20-byte bloom segment.
+    // Layout: [0..3]=device prefix (4), [4]=flags (1), [5..24]=truncated bloom filter (20), [25]=has_internet (1), [26]=protocol_version (1).
+    // Total = 27 bytes and scanner uses copyOfRange(5, 5 + BLE_BLOOM_ADVERTISE_BYTES).
     const val BLE_PAYLOAD_SIZE = 27
     const val RETRY_TIMEOUT_MS = 5_000L
     const val RETRY_MAX = 3

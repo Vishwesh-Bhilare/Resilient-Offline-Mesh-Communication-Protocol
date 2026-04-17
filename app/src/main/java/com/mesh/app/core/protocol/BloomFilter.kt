@@ -88,7 +88,7 @@ class BloomFilter @Inject constructor() {
 
     companion object {
         fun fromByteArray(bytes: ByteArray): BloomFilter {
-            require(bytes.size == Constants.BLOOM_FILTER_BYTES)
+            require(bytes.size <= Constants.BLOOM_FILTER_BYTES)
             return BloomFilter().apply {
                 System.arraycopy(bytes, 0, this.bits, 0, bytes.size)
             }

@@ -23,6 +23,7 @@ class BleAdvertiser @Inject constructor(
     private var callback: AdvertiseCallback? = null
 
     @SuppressLint("MissingPermission")
+    @Synchronized
     fun start() {
         if (callback != null) return
         val settings = AdvertiseSettings.Builder()
@@ -42,6 +43,7 @@ class BleAdvertiser @Inject constructor(
     }
 
     @SuppressLint("MissingPermission")
+    @Synchronized
     fun refreshBloomAndReadvertise() {
         val cb = callback ?: return
         advertiser?.stopAdvertising(cb)
@@ -61,7 +63,7 @@ class BleAdvertiser @Inject constructor(
         val idPrefix = keyManager.getDeviceId().take(8).chunked(2).map { it.toInt(16).toByte() }
         for (i in idPrefix.indices) payload[i] = idPrefix[i]
         payload[4] = 0
-        System.arraycopy(bloomFilter.toByteArray(), 0, payload, 5, Constants.BLOOM_FILTER_BYTES)
+        System.arraycopy(bloomFilter.toByteArray(), 0, payload, 5, Constants.BLE_BLOOM_ADVERTISE_BYTES)
         payload[25] = if (gatewayManager.hasInternet()) 1 else 0
         payload[26] = Constants.PROTOCOL_VERSION.toByte()
         return AdvertiseData.Builder().addManufacturerData(Constants.BLE_MANUFACTURER_ID, payload).build()

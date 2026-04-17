@@ -42,7 +42,9 @@ class BleScanner @Inject constructor() {
                 val data = result.scanRecord?.getManufacturerSpecificData(Constants.BLE_MANUFACTURER_ID) ?: return
                 if (data.size != Constants.BLE_PAYLOAD_SIZE) return
                 val prefix = data.copyOfRange(0, 4).joinToString("") { "%02x".format(it) }
-                val bloom = BloomFilter.fromByteArray(data.copyOfRange(5, 25))
+                val bloom = BloomFilter.fromByteArray(
+                    data.copyOfRange(5, 5 + Constants.BLE_BLOOM_ADVERTISE_BYTES)
+                )
                 val hasInternet = data[25].toInt() == 1
                 _peers.tryEmit(PeerInfo(prefix, hasInternet, bloom, result.device.address))
             }
