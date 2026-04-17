@@ -38,6 +38,8 @@ class MessageRepository @Inject constructor(
     }
 
     suspend fun ingestFromPeer(message: Message): Boolean {
+        if (dao.countById(message.id) > 0) return false
+
         if (!rateLimiter.tryAcquire(message.sender)) return false
 
         if (message.hops >= Constants.MAX_HOPS) {
