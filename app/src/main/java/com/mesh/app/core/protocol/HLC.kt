@@ -9,9 +9,9 @@ data class HLC(
     val deviceId: String
 ) : Comparable<HLC> {
     override fun compareTo(other: HLC): Int {
-        val p = other.physicalMs.compareTo(physicalMs)
+        val p = physicalMs.compareTo(other.physicalMs)
         if (p != 0) return p
-        val c = other.counter.compareTo(counter)
+        val c = counter.compareTo(other.counter)
         if (c != 0) return c
         return deviceId.compareTo(other.deviceId)
     }

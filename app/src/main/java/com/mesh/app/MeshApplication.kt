@@ -5,8 +5,14 @@ import androidx.work.Configuration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.mesh.app.core.protocol.BloomFilter
+import com.mesh.app.data.repository.MessageRepository
 import com.mesh.app.service.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -15,6 +21,14 @@ class MeshApplication : Application(), Configuration.Provider {
 
     @Inject
     lateinit var workerFactory: androidx.hilt.work.HiltWorkerFactory
+
+    @Inject
+    lateinit var messageRepository: MessageRepository
+
+    @Inject
+    lateinit var bloomFilter: BloomFilter
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -27,5 +41,9 @@ class MeshApplication : Application(), Configuration.Provider {
             ExistingPeriodicWorkPolicy.UPDATE,
             request
         )
+
+        scope.launch {
+            messageRepository.ids().forEach { bloomFilter.add(it) }
+        }
     }
 }

@@ -38,6 +38,24 @@ class MessageRepository @Inject constructor(
 
     suspend fun ingestFromPeer(message: Message): Boolean {
         if (!rateLimiter.tryAcquire(message.sender)) return false
+
+        if (message.hops >= Constants.MAX_HOPS) {
+            Logger.w("Dropping message ${message.id}: max hops reached (${message.hops})")
+            return false
+        }
+
+        val nowSec = System.currentTimeMillis() / 1000
+        if (message.timestamp + message.ttl < nowSec) {
+            Logger.w("Dropping expired message ${message.id}")
+            return false
+        }
+
+        val expectedId = Message.sha256("${message.sender}${message.timestamp}${message.content}")
+        if (message.id != expectedId) {
+            Logger.w("Dropping message with invalid id ${message.id}")
+            return false
+        }
+
         val verified = verify(message)
         if (!verified) {
             Logger.w("Dropping invalid signature message ${message.id}")
