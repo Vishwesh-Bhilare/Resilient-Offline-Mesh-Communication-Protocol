@@ -1,5 +1,6 @@
 package com.mesh.app.core.sync
 
+import com.mesh.app.ble.BleAdvertiser
 import com.mesh.app.core.protocol.BloomFilter
 import com.mesh.app.core.transport.MessageChunk
 import com.mesh.app.data.repository.InProgressRepository
@@ -12,7 +13,9 @@ import javax.inject.Singleton
 @Singleton
 class SyncManager @Inject constructor(
     private val messageRepository: MessageRepository,
-    private val inProgressRepository: InProgressRepository
+    private val inProgressRepository: InProgressRepository,
+    private val bloomFilter: BloomFilter,
+    private val advertiser: BleAdvertiser
 ) {
     private val diffPhase = DiffPhase()
     private val requestPhase = RequestPhase()
@@ -46,6 +49,8 @@ class SyncManager @Inject constructor(
         val message = transferPhase.fromChunks(assembled) ?: return false
         val saved = saveTransferred(message)
         if (saved) {
+            bloomFilter.add(message.id)
+            advertiser.refreshBloomAndReadvertise()
             inProgressRepository.clear(chunk.messageId)
         }
         return saved

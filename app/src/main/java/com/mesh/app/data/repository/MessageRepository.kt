@@ -26,6 +26,7 @@ import android.util.Base64
 class MessageRepository @Inject constructor(
     private val dao: MessageDao,
     private val rateLimiter: RateLimiter,
+    private val hlcClock: HlcClock,
     @ApplicationContext private val context: Context
 ) {
     fun observeAll(): Flow<List<Message>> = dao.getAll().map { it.map(::toDomain) }
@@ -61,6 +62,7 @@ class MessageRepository @Inject constructor(
             Logger.w("Dropping invalid signature message ${message.id}")
             return false
         }
+        hlcClock.update(message.hlc)
         dao.insert(toEntity(message.copy(hops = message.hops + 1)))
         return true
     }

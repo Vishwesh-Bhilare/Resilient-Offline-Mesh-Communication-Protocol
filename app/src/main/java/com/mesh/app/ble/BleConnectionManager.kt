@@ -26,8 +26,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,14 +46,19 @@ class BleConnectionManager @Inject constructor(
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     private val adapter: BluetoothAdapter? get() = bluetoothManager.adapter
     private var gattServer: BluetoothGattServer? = null
+    private val activeConnections = ConcurrentHashMap<String, Boolean>()
 
     @SuppressLint("MissingPermission")
     fun start() {
         startServer()
         scope.launch {
-            scanner.peers.collectLatest { peer ->
-                if (peer.deviceId == keyManager.getDeviceId().take(8)) return@collectLatest
-                connect(peer.address)
+            scanner.peers.collect { peer ->
+                launch {
+                    if (peer.deviceId == keyManager.getDeviceId().take(8)) return@launch
+                    if (activeConnections.containsKey(peer.address)) return@launch
+                    activeConnections[peer.address] = true
+                    connect(peer.address)
+                }
             }
         }
     }
@@ -64,8 +70,15 @@ class BleConnectionManager @Inject constructor(
 
     @SuppressLint("MissingPermission")
     private fun connect(address: String) {
-        val device = adapter?.getRemoteDevice(address) ?: return
-        device.connectGatt(context, false, clientCallback, BluetoothDevice.TRANSPORT_LE)
+        val device = adapter?.getRemoteDevice(address)
+        if (device == null) {
+            activeConnections.remove(address)
+            return
+        }
+        val gatt = device.connectGatt(context, false, clientCallback, BluetoothDevice.TRANSPORT_LE)
+        if (gatt == null) {
+            activeConnections.remove(address)
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -95,6 +108,7 @@ class BleConnectionManager @Inject constructor(
                     gatt.disconnect()
                 }
             } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
+                activeConnections.remove(gatt.device.address)
                 gatt.close()
             }
         }
@@ -194,6 +208,11 @@ class BleConnectionManager @Inject constructor(
             }
         }
 
+        @Deprecated("Deprecated in API 33")
+        override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
+            onCharacteristicRead(gatt, characteristic, characteristic.value ?: byteArrayOf(), status)
+        }
+
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray) {
             if (characteristic.uuid == Constants.REQUEST_CHAR_UUID) {
                 scope.launch {
@@ -211,6 +230,11 @@ class BleConnectionManager @Inject constructor(
                     }.onFailure { Logger.w("Failed to ingest transfer chunk", it) }
                 }
             }
+        }
+
+        @Deprecated("Deprecated in API 33")
+        override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+            onCharacteristicChanged(gatt, characteristic, characteristic.value ?: return)
         }
     }
 

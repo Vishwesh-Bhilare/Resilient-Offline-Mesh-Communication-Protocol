@@ -12,13 +12,13 @@ interface MessageDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(message: MessageEntity)
 
-    @Query("SELECT * FROM messages ORDER BY hlcPhysicalMs DESC, hlcCounter DESC")
+    @Query("SELECT * FROM messages ORDER BY hlcPhysicalMs ASC, hlcCounter ASC")
     fun getAll(): Flow<List<MessageEntity>>
 
     @Query("SELECT * FROM messages WHERE published = 0 ORDER BY timestamp ASC")
     suspend fun getUnpublished(): List<MessageEntity>
 
-    @Query("SELECT * FROM messages WHERE channelId = :channelId ORDER BY hlcPhysicalMs DESC, hlcCounter DESC")
+    @Query("SELECT * FROM messages WHERE channelId = :channelId ORDER BY hlcPhysicalMs ASC, hlcCounter ASC")
     fun getByChannel(channelId: String): Flow<List<MessageEntity>>
 
     @Query("DELETE FROM messages WHERE (receivedAt + ttl * 1000) < :now")
