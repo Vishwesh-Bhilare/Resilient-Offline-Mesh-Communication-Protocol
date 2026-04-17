@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mesh.app.ble.BleAdvertiser
 import com.mesh.app.core.identity.KeyManager
+import com.mesh.app.core.protocol.BloomFilter
 import com.mesh.app.core.protocol.HlcClock
 import com.mesh.app.core.protocol.Message
 import com.mesh.app.data.repository.MessageRepository
@@ -19,7 +20,8 @@ class ChatViewModel @Inject constructor(
     private val messageRepository: MessageRepository,
     private val keyManager: KeyManager,
     private val hlcClock: HlcClock,
-    private val advertiser: BleAdvertiser
+    private val advertiser: BleAdvertiser,
+    private val bloomFilter: BloomFilter
 ) : ViewModel() {
     val messages: StateFlow<List<Message>> = messageRepository.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -29,6 +31,7 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             val msg = Message.create(text.trim(), channelId, keyManager, hlcClock.now())
             messageRepository.save(msg)
+            bloomFilter.add(msg.id)
             advertiser.refreshBloomAndReadvertise()
         }
     }

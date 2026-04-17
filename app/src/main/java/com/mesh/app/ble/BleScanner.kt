@@ -45,7 +45,7 @@ class BleScanner @Inject constructor() {
                 val bloom = BloomFilter.fromByteArray(
                     data.copyOfRange(5, 5 + Constants.BLE_BLOOM_ADVERTISE_BYTES)
                 )
-                val hasInternet = data[25].toInt() == 1
+                val hasInternet = (data[25].toInt() and 0xFF) != 0
                 _peers.tryEmit(PeerInfo(prefix, hasInternet, bloom, result.device.address))
             }
         }

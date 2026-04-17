@@ -64,6 +64,7 @@ class BleAdvertiser @Inject constructor(
         for (i in idPrefix.indices) payload[i] = idPrefix[i]
         payload[4] = 0
         System.arraycopy(bloomFilter.toByteArray(), 0, payload, 5, Constants.BLE_BLOOM_ADVERTISE_BYTES)
+        // has_internet: 1 = yes, 0 = no. Reader should treat any non-zero as true.
         payload[25] = if (gatewayManager.hasInternet()) 1 else 0
         payload[26] = Constants.PROTOCOL_VERSION.toByte()
         return AdvertiseData.Builder().addManufacturerData(Constants.BLE_MANUFACTURER_ID, payload).build()
