@@ -45,7 +45,7 @@ class GatewayManager @Inject constructor(
         for (msg in list) {
             runCatching {
                 val resp = apiService.publishMessage(MessageDto.from(msg))
-                if (resp.code() == 200 || resp.code() == 201) {
+                if (resp.code() in listOf(200, 201, 409)) {
                     messageRepository.markPublished(msg.id)
                 }
             }.onFailure { Logger.w("Gateway publish failed for ${msg.id}", it) }

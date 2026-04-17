@@ -16,6 +16,8 @@ object Constants {
     const val BLE_SCAN_ACTIVE_MS = 5_000L
     const val BLE_SCAN_PAUSE_MS = 25_000L
     const val BLE_MANUFACTURER_ID = 0x1234
+    // Layout: [0..3]=device prefix (4), [4]=flags (1), [5..24]=bloom filter (20), [25]=has_internet (1), [26]=protocol_version (1).
+    // Total = 27 bytes and scanner uses copyOfRange(5, 25) for the 20-byte bloom segment.
     const val BLE_PAYLOAD_SIZE = 27
     const val RETRY_TIMEOUT_MS = 5_000L
     const val RETRY_MAX = 3
