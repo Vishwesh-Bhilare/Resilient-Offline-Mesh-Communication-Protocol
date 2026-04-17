@@ -10,13 +10,16 @@ import android.bluetooth.BluetoothGattServer
 import android.bluetooth.BluetoothGattServerCallback
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothStatusCodes
 import android.content.Context
+import android.os.Build
 import android.util.Base64
 import com.mesh.app.core.identity.KeyManager
 import com.mesh.app.core.protocol.BloomFilter
 import com.mesh.app.core.security.RateLimiter
 import com.mesh.app.core.sync.HelloPhase
 import com.mesh.app.core.sync.SyncManager
+import com.mesh.app.core.sync.TransferPhase
 import com.mesh.app.core.transport.MessageChunk
 import com.mesh.app.data.local.entity.PeerEntity
 import com.mesh.app.data.repository.PeerRepository
@@ -26,6 +29,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
@@ -46,6 +50,7 @@ class BleConnectionManager @Inject constructor(
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     private val adapter: BluetoothAdapter? get() = bluetoothManager.adapter
     private var gattServer: BluetoothGattServer? = null
+    private var meshService: BluetoothGattService? = null
     private val activeConnections = ConcurrentHashMap<String, Boolean>()
 
     @SuppressLint("MissingPermission")
@@ -54,7 +59,6 @@ class BleConnectionManager @Inject constructor(
         scope.launch {
             scanner.peers.collect { peer ->
                 launch {
-                    if (peer.deviceId == keyManager.getDeviceId().take(8)) return@launch
                     if (activeConnections.containsKey(peer.address)) return@launch
                     activeConnections[peer.address] = true
                     connect(peer.address)
@@ -94,6 +98,7 @@ class BleConnectionManager @Inject constructor(
         service.addCharacteristic(BluetoothGattCharacteristic(Constants.DIFF_CHAR_UUID, props, perms))
         service.addCharacteristic(BluetoothGattCharacteristic(Constants.REQUEST_CHAR_UUID, props, perms))
         service.addCharacteristic(BluetoothGattCharacteristic(Constants.TRANSFER_CHAR_UUID, props, perms))
+        meshService = service
         gattServer?.addService(service)
     }
 
@@ -125,8 +130,20 @@ class BleConnectionManager @Inject constructor(
         @SuppressLint("MissingPermission")
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             val hello = gatt.getService(Constants.SERVICE_UUID)?.getCharacteristic(Constants.HELLO_CHAR_UUID) ?: return
-            hello.value = HelloPhase().encode(keyManager.getDeviceId(), bloomFilter)
-            if (!gatt.writeCharacteristic(hello)) {
+            val encoded = HelloPhase().encode(keyManager.getDeviceId(), bloomFilter)
+            val writeOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                gatt.writeCharacteristic(
+                    hello,
+                    encoded,
+                    BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                ) == BluetoothStatusCodes.SUCCESS
+            } else {
+                @Suppress("DEPRECATION")
+                hello.value = encoded
+                @Suppress("DEPRECATION")
+                gatt.writeCharacteristic(hello)
+            }
+            if (!writeOk) {
                 gatt.disconnect()
                 return
             }
@@ -175,6 +192,11 @@ class BleConnectionManager @Inject constructor(
                     val payload = HelloPhase().decode(value)
                     val peerBloom = BloomFilter.fromByteArray(Base64.decode(payload.bloomFilter, Base64.NO_WRAP))
                     val resolvedPeerId = payload.deviceId.ifBlank { gatt.device.address }
+                    if (resolvedPeerId == keyManager.getDeviceId()) {
+                        Logger.d("Connected to self, disconnecting")
+                        gatt.disconnect()
+                        return@launch
+                    }
 
                     peerRepository.upsert(
                         PeerEntity(
@@ -197,8 +219,20 @@ class BleConnectionManager @Inject constructor(
                         gatt.disconnect()
                         return@launch
                     }
-                    request.value = syncManager.encodeRequest(neededIds)
-                    if (!gatt.writeCharacteristic(request)) {
+                    val encoded = syncManager.encodeRequest(neededIds)
+                    val writeOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        gatt.writeCharacteristic(
+                            request,
+                            encoded,
+                            BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                        ) == BluetoothStatusCodes.SUCCESS
+                    } else {
+                        @Suppress("DEPRECATION")
+                        request.value = encoded
+                        @Suppress("DEPRECATION")
+                        gatt.writeCharacteristic(request)
+                    }
+                    if (!writeOk) {
                         gatt.disconnect()
                     }
                 }.onFailure {
@@ -266,8 +300,27 @@ class BleConnectionManager @Inject constructor(
             if (characteristic.uuid == Constants.REQUEST_CHAR_UUID) {
                 scope.launch {
                     val ids = syncManager.decodeRequest(value)
-                    val response = syncManager.messagesForRequest(ids)
-                    Logger.d("Serving ${response.size} requested messages")
+                    val messages = syncManager.messagesForRequest(ids)
+                    val transferChar = meshService?.getCharacteristic(Constants.TRANSFER_CHAR_UUID)
+                    if (transferChar == null) {
+                        Logger.w("Transfer characteristic not found on server")
+                        return@launch
+                    }
+                    val chunks = messages.flatMap { msg ->
+                        TransferPhase().toChunks(listOf(msg))
+                    }
+                    for (chunk in chunks) {
+                        val chunkBytes = chunk.toByteArray()
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            gattServer?.notifyCharacteristicChanged(device, transferChar, false, chunkBytes)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            transferChar.value = chunkBytes
+                            @Suppress("DEPRECATION")
+                            gattServer?.notifyCharacteristicChanged(device, transferChar, false)
+                        }
+                        delay(20)
+                    }
                 }
             }
             if (responseNeeded) {
