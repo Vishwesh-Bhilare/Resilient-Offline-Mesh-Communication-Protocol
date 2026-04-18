@@ -24,31 +24,17 @@ class MainActivity : ComponentActivity() {
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        // Start service regardless — it guards itself against missing BT
-        startMeshService()
+    ) {
+        if (hasAllRequiredPermissions()) {
+            startMeshService()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val permissions = buildList {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                add(Manifest.permission.BLUETOOTH_SCAN)
-                add(Manifest.permission.BLUETOOTH_CONNECT)
-                add(Manifest.permission.BLUETOOTH_ADVERTISE)
-            } else {
-                add(Manifest.permission.BLUETOOTH)
-                add(Manifest.permission.BLUETOOTH_ADMIN)
-                add(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                add(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-
-        val missingPermissions = permissions.filter {
+        val missingPermissions = requiredPermissions().filter {
             checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
         }
 
@@ -59,6 +45,25 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent { MeshApp() }
+    }
+
+    private fun requiredPermissions(): List<String> = buildList {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            add(Manifest.permission.BLUETOOTH_SCAN)
+            add(Manifest.permission.BLUETOOTH_CONNECT)
+            add(Manifest.permission.BLUETOOTH_ADVERTISE)
+        } else {
+            add(Manifest.permission.BLUETOOTH)
+            add(Manifest.permission.BLUETOOTH_ADMIN)
+            add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    private fun hasAllRequiredPermissions(): Boolean = requiredPermissions().all {
+        checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun startMeshService() {

@@ -39,7 +39,17 @@ class MeshForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         // Must call startForeground immediately to avoid RemoteServiceException on Android 8+
-        startForeground(1001, buildNotification())
+        val startedInForeground = runCatching {
+            startForeground(1001, buildNotification())
+            true
+        }.getOrElse { t ->
+            Logger.e("startForeground failed; stopping service to avoid crash loop", t)
+            false
+        }
+        if (!startedInForeground) {
+            stopSelf()
+            return
+        }
 
         acquireWakeLockSafely()
 
