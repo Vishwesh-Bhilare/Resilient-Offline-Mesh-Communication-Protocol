@@ -1,14 +1,21 @@
 package com.mesh.app.service
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationCompat
 import com.mesh.app.ble.BleAdvertiser
 import com.mesh.app.ble.BleConnectionManager
@@ -33,6 +40,7 @@ class MeshForegroundService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var wakeLock: PowerManager.WakeLock? = null
     private var bleStarted = false
+    private var bluetoothStateReceiver: BroadcastReceiver? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -52,11 +60,12 @@ class MeshForegroundService : Service() {
         }
 
         acquireWakeLockSafely()
+        registerBluetoothStateReceiver()
 
-        if (isBluetoothAvailable()) {
+        if (canStartBleStack()) {
             startBleStack()
         } else {
-            Logger.w("Bluetooth not available on onCreate — BLE stack not started")
+            Logger.w("BLE stack prerequisites not met on onCreate; start deferred")
         }
 
         // Gateway manager uses ConnectivityManager, safe to start regardless of BT state
@@ -65,7 +74,13 @@ class MeshForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!bleStarted && isBluetoothAvailable()) {
+        val isBluetoothEnabledIntent =
+            intent?.action == BluetoothAdapter.ACTION_STATE_CHANGED &&
+                intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR) == BluetoothAdapter.STATE_ON
+        if (isBluetoothEnabledIntent) {
+            Logger.i("Received Bluetooth ON state in onStartCommand; retrying BLE stack")
+        }
+        if (!bleStarted && canStartBleStack()) {
             startBleStack()
         }
         return START_STICKY
@@ -78,6 +93,7 @@ class MeshForegroundService : Service() {
             runCatching { connectionManager.stop() }
         }
         runCatching { gatewayManager.stop() }
+        unregisterBluetoothStateReceiver()
         releaseWakeLockSafely()
         scope.cancel()
         super.onDestroy()
@@ -88,6 +104,10 @@ class MeshForegroundService : Service() {
     // -------------------------------------------------------------------------
 
     private fun startBleStack() {
+        if (!canStartBleStack()) {
+            Logger.w("Cannot start BLE stack: missing permissions or Bluetooth unavailable")
+            return
+        }
         runCatching {
             advertiser.start()
             scanner.start(scope)
@@ -108,6 +128,55 @@ class MeshForegroundService : Service() {
             Logger.w("isBluetoothAvailable check failed", t)
             false
         }
+    }
+
+    private fun hasBlePermissions(): Boolean {
+        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            listOf(
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_ADVERTISE
+            )
+        } else {
+            listOf(
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
+        }
+        return permissions.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun canStartBleStack(): Boolean = hasBlePermissions() && isBluetoothAvailable()
+
+    private fun registerBluetoothStateReceiver() {
+        if (bluetoothStateReceiver != null) return
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action != BluetoothAdapter.ACTION_STATE_CHANGED) return
+                val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
+                if (state == BluetoothAdapter.STATE_ON && !bleStarted && canStartBleStack()) {
+                    Logger.i("Bluetooth enabled; retrying BLE stack startup")
+                    startBleStack()
+                }
+            }
+        }
+        bluetoothStateReceiver = receiver
+        runCatching {
+            registerReceiver(receiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
+        }.onFailure {
+            Logger.w("Failed to register Bluetooth state receiver", it)
+            bluetoothStateReceiver = null
+        }
+    }
+
+    private fun unregisterBluetoothStateReceiver() {
+        val receiver = bluetoothStateReceiver ?: return
+        runCatching { unregisterReceiver(receiver) }
+            .onFailure { Logger.w("Failed to unregister Bluetooth state receiver", it) }
+        bluetoothStateReceiver = null
     }
 
     private fun acquireWakeLockSafely() {
