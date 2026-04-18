@@ -22,7 +22,8 @@ class GatewayManager @Inject constructor(
     private val apiService: ApiService
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val connectivityManager: ConnectivityManager? =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
 
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
@@ -32,11 +33,16 @@ class GatewayManager @Inject constructor(
     }
 
     fun start() {
-        connectivityManager.registerDefaultNetworkCallback(callback)
+        val manager = connectivityManager
+        if (manager == null) {
+            Logger.w("ConnectivityManager unavailable; gateway sync disabled")
+            return
+        }
+        manager.registerDefaultNetworkCallback(callback)
     }
 
     fun stop() {
-        runCatching { connectivityManager.unregisterNetworkCallback(callback) }
+        runCatching { connectivityManager?.unregisterNetworkCallback(callback) }
         scope.cancel()
     }
 
@@ -53,8 +59,9 @@ class GatewayManager @Inject constructor(
     }
 
     fun hasInternet(): Boolean {
-        val network = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        val manager = connectivityManager ?: return false
+        val network = manager.activeNetwork ?: return false
+        val capabilities = manager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 }
