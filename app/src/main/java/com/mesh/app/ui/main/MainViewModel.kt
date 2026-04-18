@@ -20,6 +20,9 @@ class MainViewModel @Inject constructor(
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
-    val isGateway: StateFlow<Boolean> = kotlinx.coroutines.flow.flowOf(gatewayManager.hasInternet())
-        .stateIn(viewModelScope, SharingStarted.Eagerly, gatewayManager.hasInternet())
+    private fun safeHasInternet(gatewayManager: GatewayManager): Boolean =
+        runCatching { gatewayManager.hasInternet() }.getOrDefault(false)
+
+    val isGateway: StateFlow<Boolean> = kotlinx.coroutines.flow.flowOf(safeHasInternet(gatewayManager))
+        .stateIn(viewModelScope, SharingStarted.Eagerly, safeHasInternet(gatewayManager))
 }

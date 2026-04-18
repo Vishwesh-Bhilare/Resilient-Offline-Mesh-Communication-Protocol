@@ -12,7 +12,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -72,7 +71,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun MeshApp(viewModel: MainViewModel = hiltViewModel()) {
+private fun MeshApp() {
     val nav = rememberNavController()
     Surface(color = MaterialTheme.colorScheme.background) {
         NavHost(navController = nav, startDestination = "chat") {
