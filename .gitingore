@@ -1,0 +1,45 @@
+# Local configuration
+local.properties
+*.keystore
+*.jks
+
+# Gradle
+.gradle/
+build/
+gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio / IntelliJ IDEA
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+*.iml
+*.ipr
+*.iws
+
+# Generated
+app/build/
+app/release/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kotlin
+*.class
+*.kotlin_module
+
+# ProGuard
+proguard/
+mapping.txt
+seeds.txt
+usage.txt
+
+# NDK
+obj/
+*.so
+
+# Logs
+*.log
