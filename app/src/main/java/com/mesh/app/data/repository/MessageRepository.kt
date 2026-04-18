@@ -1,135 +1,145 @@
-package com.mesh.app.data.repository
+package com.mesh.app.service
 
-import android.content.Context
-import com.mesh.app.core.protocol.HLC
-import com.mesh.app.core.protocol.HlcClock
-import com.mesh.app.core.protocol.Message
-import com.mesh.app.core.security.RateLimiter
-import com.mesh.app.core.security.SignatureUtil
-import com.mesh.app.data.local.db.MessageDao
-import com.mesh.app.data.local.entity.MessageEntity
-import com.mesh.app.util.Constants
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.bluetooth.BluetoothManager
+import android.content.Intent
+import android.os.Build
+import android.os.IBinder
+import android.os.PowerManager
+import androidx.core.app.NotificationCompat
+import com.mesh.app.ble.BleAdvertiser
+import com.mesh.app.ble.BleConnectionManager
+import com.mesh.app.ble.BleScanner
+import com.mesh.app.gateway.GatewayManager
 import com.mesh.app.util.Logger
-import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
-import java.security.KeyFactory
-import java.security.spec.X509EncodedKeySpec
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import javax.inject.Inject
-import javax.inject.Singleton
-import android.util.Base64
 
-@Singleton
-class MessageRepository @Inject constructor(
-    private val dao: MessageDao,
-    private val rateLimiter: RateLimiter,
-    private val hlcClock: HlcClock,
-    @ApplicationContext private val context: Context
-) {
-    fun observeAll(): Flow<List<Message>> = dao.getAll().map { it.map(::toDomain) }
+@AndroidEntryPoint
+class MeshForegroundService : Service() {
 
-    fun observeChannel(channelId: String): Flow<List<Message>> = dao.getByChannel(channelId).map { it.map(::toDomain) }
+    @Inject lateinit var advertiser: BleAdvertiser
+    @Inject lateinit var scanner: BleScanner
+    @Inject lateinit var connectionManager: BleConnectionManager
+    @Inject lateinit var gatewayManager: GatewayManager
 
-    suspend fun save(message: Message) {
-        dao.insert(toEntity(message))
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var wakeLock: PowerManager.WakeLock? = null
+    private var bleStarted = false
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        // Must call startForeground immediately to avoid RemoteServiceException on Android 8+
+        startForeground(1001, buildNotification())
+
+        acquireWakeLockSafely()
+
+        if (isBluetoothAvailable()) {
+            startBleStack()
+        } else {
+            Logger.w("Bluetooth not available on onCreate — BLE stack not started")
+        }
+
+        // Gateway manager uses ConnectivityManager, safe to start regardless of BT state
+        runCatching { gatewayManager.start() }
+            .onFailure { Logger.e("GatewayManager start failed", it) }
     }
 
-    suspend fun ingestFromPeer(message: Message): Boolean {
-        if (dao.countById(message.id) > 0) return false
-
-        if (!rateLimiter.tryAcquire(message.sender)) return false
-
-        if (message.hops >= Constants.MAX_HOPS) {
-            Logger.w("Dropping message ${message.id}: max hops reached (${message.hops})")
-            return false
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!bleStarted && isBluetoothAvailable()) {
+            startBleStack()
         }
-
-        val nowSec = System.currentTimeMillis() / 1000
-        if (message.timestamp + message.ttl < nowSec) {
-            Logger.w("Dropping expired message ${message.id}")
-            return false
-        }
-
-        val expectedId = Message.sha256("${message.sender}${message.timestamp}${message.content}")
-        if (message.id != expectedId) {
-            Logger.w("Dropping message with invalid id ${message.id}")
-            return false
-        }
-
-        val verified = verify(message)
-        if (!verified) {
-            Logger.w("Dropping invalid signature message ${message.id}")
-            return false
-        }
-        hlcClock.update(message.hlc)
-        dao.insert(toEntity(message.copy(hops = message.hops + 1)))
-        return true
+        return START_STICKY
     }
 
-    suspend fun ids(): List<String> = dao.getAllIds()
+    override fun onDestroy() {
+        if (bleStarted) {
+            runCatching { advertiser.stop() }
+            runCatching { scanner.stop() }
+            runCatching { connectionManager.stop() }
+        }
+        runCatching { gatewayManager.stop() }
+        releaseWakeLockSafely()
+        scope.cancel()
+        super.onDestroy()
+    }
 
-    suspend fun getMessages(ids: List<String>): List<Message> = dao.getByIds(ids).map(::toDomain)
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
 
-    suspend fun unpublished(): List<Message> = dao.getUnpublished().map(::toDomain)
-
-    suspend fun markPublished(id: String) = dao.markPublished(id)
-
-    suspend fun cleanupAndEvict() = withContext(Dispatchers.IO) {
-        val now = System.currentTimeMillis()
-        dao.deleteExpired(now)
-        val dbFile = context.getDatabasePath("mesh.db")
-        if (dbFile.exists() && dbFile.length() > Constants.MAX_DB_SIZE_BYTES) {
-            dao.deletePublishedOldest(100)
-            dao.deleteExpired(now)
-            if (dbFile.length() > Constants.MAX_DB_SIZE_BYTES) {
-                dao.deleteOldest(200)
-            }
+    private fun startBleStack() {
+        runCatching {
+            advertiser.start()
+            scanner.start(scope)
+            connectionManager.start()
+            bleStarted = true
+            Logger.i("BLE stack started")
+        }.onFailure {
+            Logger.e("Failed to start BLE stack", it)
         }
     }
 
-    private fun verify(message: Message): Boolean {
+    private fun isBluetoothAvailable(): Boolean {
         return try {
-            val publicBytes = Base64.decode(message.public_key, Base64.NO_WRAP)
-            val keyFactory = KeyFactory.getInstance("Ed25519", "BC")
-            val publicKey = keyFactory.generatePublic(X509EncodedKeySpec(publicBytes))
-            SignatureUtil.verify(message.id + message.content, message.signature, publicKey)
-        } catch (_: Throwable) {
+            val btManager = getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager
+            val adapter = btManager?.adapter
+            adapter != null && adapter.isEnabled
+        } catch (t: Throwable) {
+            Logger.w("isBluetoothAvailable check failed", t)
             false
         }
     }
 
-    private fun toEntity(message: Message) = MessageEntity(
-        id = message.id,
-        sender = message.sender,
-        publicKey = message.public_key,
-        timestamp = message.timestamp,
-        hlcPhysicalMs = message.hlc.physicalMs,
-        hlcCounter = message.hlc.counter,
-        hlcDeviceId = message.hlc.deviceId,
-        ttl = message.ttl,
-        content = message.content,
-        hops = message.hops,
-        signatureB64 = message.signature,
-        size = message.size,
-        priority = message.priority,
-        channelId = message.channel_id,
-        receivedAt = System.currentTimeMillis()
-    )
+    private fun acquireWakeLockSafely() {
+        try {
+            val pm = getSystemService(POWER_SERVICE) as PowerManager
+            wakeLock = pm.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "mesh:ble_service"
+            ).also {
+                // 10-minute ceiling — WorkManager will re-trigger the service if needed
+                it.acquire(10 * 60 * 1000L)
+            }
+        } catch (t: Throwable) {
+            Logger.w("WakeLock acquire failed", t)
+        }
+    }
 
-    private fun toDomain(entity: MessageEntity) = Message(
-        id = entity.id,
-        sender = entity.sender,
-        public_key = entity.publicKey,
-        timestamp = entity.timestamp,
-        hlc = HLC(entity.hlcPhysicalMs, entity.hlcCounter, entity.hlcDeviceId),
-        ttl = entity.ttl,
-        content = entity.content,
-        hops = entity.hops,
-        signature = entity.signatureB64,
-        size = entity.size,
-        priority = entity.priority,
-        channel_id = entity.channelId
-    )
+    private fun releaseWakeLockSafely() {
+        try {
+            wakeLock?.takeIf { it.isHeld }?.release()
+        } catch (t: Throwable) {
+            Logger.w("WakeLock release failed", t)
+        } finally {
+            wakeLock = null
+        }
+    }
+
+    private fun buildNotification(): Notification {
+        val channelId = "mesh_service"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Mesh Service",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        }
+        return NotificationCompat.Builder(this, channelId)
+            .setContentTitle("Mesh protocol active")
+            .setContentText("Scanning and relaying nearby messages")
+            .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
+            .setOngoing(true)
+            .build()
+    }
 }

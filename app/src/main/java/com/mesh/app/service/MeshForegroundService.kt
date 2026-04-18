@@ -41,22 +41,20 @@ class MeshForegroundService : Service() {
         // Must call startForeground immediately to avoid RemoteServiceException on Android 8+
         startForeground(1001, buildNotification())
 
-        val pm = getSystemService(POWER_SERVICE) as PowerManager
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "mesh:ble").apply {
-            acquire(10 * 60 * 1000L) // 10 minute max to avoid infinite lock
-        }
+        acquireWakeLockSafely()
 
         if (isBluetoothAvailable()) {
             startBleStack()
         } else {
-            Logger.w("Bluetooth not available — BLE stack not started")
+            Logger.w("Bluetooth not available on onCreate — BLE stack not started")
         }
 
-        gatewayManager.start()
+        // Gateway manager uses ConnectivityManager, safe to start regardless of BT state
+        runCatching { gatewayManager.start() }
+            .onFailure { Logger.e("GatewayManager start failed", it) }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // If Bluetooth became available after initial onCreate, start BLE now
         if (!bleStarted && isBluetoothAvailable()) {
             startBleStack()
         }
@@ -65,15 +63,19 @@ class MeshForegroundService : Service() {
 
     override fun onDestroy() {
         if (bleStarted) {
-            advertiser.stop()
-            scanner.stop()
-            connectionManager.stop()
+            runCatching { advertiser.stop() }
+            runCatching { scanner.stop() }
+            runCatching { connectionManager.stop() }
         }
-        gatewayManager.stop()
-        wakeLock?.takeIf { it.isHeld }?.release()
+        runCatching { gatewayManager.stop() }
+        releaseWakeLockSafely()
         scope.cancel()
         super.onDestroy()
     }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
 
     private fun startBleStack() {
         runCatching {
@@ -88,9 +90,39 @@ class MeshForegroundService : Service() {
     }
 
     private fun isBluetoothAvailable(): Boolean {
-        val btManager = getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager
-        val adapter = btManager?.adapter
-        return adapter != null && adapter.isEnabled
+        return try {
+            val btManager = getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager
+            val adapter = btManager?.adapter
+            adapter != null && adapter.isEnabled
+        } catch (t: Throwable) {
+            Logger.w("isBluetoothAvailable check failed", t)
+            false
+        }
+    }
+
+    private fun acquireWakeLockSafely() {
+        try {
+            val pm = getSystemService(POWER_SERVICE) as PowerManager
+            wakeLock = pm.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "mesh:ble_service"
+            ).also {
+                // 10-minute ceiling — WorkManager will re-trigger the service if needed
+                it.acquire(10 * 60 * 1000L)
+            }
+        } catch (t: Throwable) {
+            Logger.w("WakeLock acquire failed", t)
+        }
+    }
+
+    private fun releaseWakeLockSafely() {
+        try {
+            wakeLock?.takeIf { it.isHeld }?.release()
+        } catch (t: Throwable) {
+            Logger.w("WakeLock release failed", t)
+        } finally {
+            wakeLock = null
+        }
     }
 
     private fun buildNotification(): Notification {

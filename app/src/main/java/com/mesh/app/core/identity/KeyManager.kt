@@ -6,6 +6,8 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.mesh.app.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
+import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPrivateKey
+import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPublicKey
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyFactory
 import java.security.KeyPair
@@ -23,22 +25,54 @@ import javax.inject.Singleton
 class KeyManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val prefs by lazy {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        EncryptedSharedPreferences.create(
-            context,
-            "mesh_keys",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
+    companion object {
+        // Ed25519 OID — required on Android since "Ed25519" alias is not always registered
+        private const val ED25519_OID = "1.3.101.112"
+        private const val BC_PROVIDER = "BC"
     }
 
+    // Lazy init to avoid crashing during DI graph construction
+    private val prefs by lazy { createEncryptedPrefs() }
+
     init {
-        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
-            Security.addProvider(BouncyCastleProvider())
+        ensureBouncyCastle()
+    }
+
+    private fun ensureBouncyCastle() {
+        // Remove Android's bundled (stripped) BC provider and insert the full one at position 1
+        // so that our Ed25519 implementation is used everywhere.
+        try {
+            val existingBc = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME)
+            if (existingBc != null && existingBc.javaClass.name != BouncyCastleProvider::class.java.name) {
+                Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME)
+                Security.insertProviderAt(BouncyCastleProvider(), 1)
+                Logger.i("Replaced Android BC provider with full BouncyCastle")
+            } else if (existingBc == null) {
+                Security.insertProviderAt(BouncyCastleProvider(), 1)
+                Logger.i("Inserted BouncyCastle provider")
+            }
+        } catch (t: Throwable) {
+            Logger.w("BouncyCastle provider setup failed", t)
+        }
+    }
+
+    private fun createEncryptedPrefs(): android.content.SharedPreferences {
+        return try {
+            val masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            EncryptedSharedPreferences.create(
+                context,
+                "mesh_keys",
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (t: Throwable) {
+            // Fallback: if EncryptedSharedPreferences fails (e.g., keystore wipe),
+            // clear and recreate. This loses the identity but prevents a crash loop.
+            Logger.w("EncryptedSharedPreferences init failed, falling back to plain prefs", t)
+            context.getSharedPreferences("mesh_keys_fallback", Context.MODE_PRIVATE)
         }
     }
 
@@ -47,10 +81,17 @@ class KeyManager @Inject constructor(
         val privateB64 = prefs.getString("private", null)
         val publicB64 = prefs.getString("public", null)
         if (privateB64 != null && publicB64 != null) {
-            return decodeKeyPair(privateB64, publicB64)
+            val pair = runCatching { decodeKeyPair(privateB64, publicB64) }.getOrNull()
+            if (pair != null) return pair
+            // Corrupt keys — regenerate
+            Logger.w("Stored keys could not be decoded, regenerating identity")
+            prefs.edit().clear().apply()
         }
+        return generateAndPersistKeyPair()
+    }
 
-        val generator = KeyPairGenerator.getInstance("Ed25519", BouncyCastleProvider.PROVIDER_NAME)
+    private fun generateAndPersistKeyPair(): KeyPair {
+        val generator = KeyPairGenerator.getInstance(ED25519_OID, BC_PROVIDER)
         val kp = generator.generateKeyPair()
         prefs.edit()
             .putString("private", Base64.encodeToString(kp.private.encoded, Base64.NO_WRAP))
@@ -68,19 +109,20 @@ class KeyManager @Inject constructor(
 
     fun getIdentity(): DeviceIdentity {
         val keyPair = getOrCreateKeyPair()
-        return DeviceIdentity(getDeviceId(), Base64.encodeToString(keyPair.public.encoded, Base64.NO_WRAP))
+        return DeviceIdentity(
+            deviceId = getDeviceId(),
+            publicKeyBase64 = Base64.encodeToString(keyPair.public.encoded, Base64.NO_WRAP)
+        )
     }
 
     private fun decodeKeyPair(privateB64: String, publicB64: String): KeyPair {
-        return try {
-            val kf = KeyFactory.getInstance("Ed25519", BouncyCastleProvider.PROVIDER_NAME)
-            val publicKey: PublicKey = kf.generatePublic(X509EncodedKeySpec(Base64.decode(publicB64, Base64.NO_WRAP)))
-            val privateKey: PrivateKey = kf.generatePrivate(PKCS8EncodedKeySpec(Base64.decode(privateB64, Base64.NO_WRAP)))
-            KeyPair(publicKey, privateKey)
-        } catch (t: Throwable) {
-            Logger.w("Failed to decode persisted keys, regenerating", t)
-            prefs.edit().clear().apply()
-            getOrCreateKeyPair()
-        }
+        val kf = KeyFactory.getInstance(ED25519_OID, BC_PROVIDER)
+        val publicKey: PublicKey = kf.generatePublic(
+            X509EncodedKeySpec(Base64.decode(publicB64, Base64.NO_WRAP))
+        )
+        val privateKey: PrivateKey = kf.generatePrivate(
+            PKCS8EncodedKeySpec(Base64.decode(privateB64, Base64.NO_WRAP))
+        )
+        return KeyPair(publicKey, privateKey)
     }
 }
