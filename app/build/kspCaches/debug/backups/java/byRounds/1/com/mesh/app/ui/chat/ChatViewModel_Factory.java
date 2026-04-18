@@ -2,6 +2,7 @@ package com.mesh.app.ui.chat;
 
 import com.mesh.app.ble.BleAdvertiser;
 import com.mesh.app.core.identity.KeyManager;
+import com.mesh.app.core.protocol.BloomFilter;
 import com.mesh.app.core.protocol.HlcClock;
 import com.mesh.app.data.repository.MessageRepository;
 import dagger.internal.DaggerGenerated;
@@ -34,28 +35,31 @@ public final class ChatViewModel_Factory implements Factory<ChatViewModel> {
 
   private final Provider<BleAdvertiser> advertiserProvider;
 
+  private final Provider<BloomFilter> bloomFilterProvider;
+
   public ChatViewModel_Factory(Provider<MessageRepository> messageRepositoryProvider,
       Provider<KeyManager> keyManagerProvider, Provider<HlcClock> hlcClockProvider,
-      Provider<BleAdvertiser> advertiserProvider) {
+      Provider<BleAdvertiser> advertiserProvider, Provider<BloomFilter> bloomFilterProvider) {
     this.messageRepositoryProvider = messageRepositoryProvider;
     this.keyManagerProvider = keyManagerProvider;
     this.hlcClockProvider = hlcClockProvider;
     this.advertiserProvider = advertiserProvider;
+    this.bloomFilterProvider = bloomFilterProvider;
   }
 
   @Override
   public ChatViewModel get() {
-    return newInstance(messageRepositoryProvider.get(), keyManagerProvider.get(), hlcClockProvider.get(), advertiserProvider.get());
+    return newInstance(messageRepositoryProvider.get(), keyManagerProvider.get(), hlcClockProvider.get(), advertiserProvider.get(), bloomFilterProvider.get());
   }
 
   public static ChatViewModel_Factory create(Provider<MessageRepository> messageRepositoryProvider,
       Provider<KeyManager> keyManagerProvider, Provider<HlcClock> hlcClockProvider,
-      Provider<BleAdvertiser> advertiserProvider) {
-    return new ChatViewModel_Factory(messageRepositoryProvider, keyManagerProvider, hlcClockProvider, advertiserProvider);
+      Provider<BleAdvertiser> advertiserProvider, Provider<BloomFilter> bloomFilterProvider) {
+    return new ChatViewModel_Factory(messageRepositoryProvider, keyManagerProvider, hlcClockProvider, advertiserProvider, bloomFilterProvider);
   }
 
   public static ChatViewModel newInstance(MessageRepository messageRepository,
-      KeyManager keyManager, HlcClock hlcClock, BleAdvertiser advertiser) {
-    return new ChatViewModel(messageRepository, keyManager, hlcClock, advertiser);
+      KeyManager keyManager, HlcClock hlcClock, BleAdvertiser advertiser, BloomFilter bloomFilter) {
+    return new ChatViewModel(messageRepository, keyManager, hlcClock, advertiser, bloomFilter);
   }
 }

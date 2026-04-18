@@ -45,7 +45,6 @@
         android:label="Mesh Protocol"
         android:roundIcon="@android:mipmap/sym_def_app_icon"
         android:supportsRtl="true"
-        android:testOnly="true"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar" >
         <activity
             android:name="com.mesh.app.ui.main.MainActivity"

@@ -15,6 +15,7 @@ import androidx.sqlite.db.SupportSQLiteStatement;
 import com.mesh.app.data.local.entity.MessageEntity;
 import java.lang.Class;
 import java.lang.Exception;
+import java.lang.Integer;
 import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
@@ -234,7 +235,7 @@ public final class MessageDao_Impl implements MessageDao {
 
   @Override
   public Flow<List<MessageEntity>> getAll() {
-    final String _sql = "SELECT * FROM messages ORDER BY hlcPhysicalMs DESC, hlcCounter DESC";
+    final String _sql = "SELECT * FROM messages ORDER BY hlcPhysicalMs ASC, hlcCounter ASC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     return CoroutinesRoom.createFlow(__db, false, new String[] {"messages"}, new Callable<List<MessageEntity>>() {
       @Override
@@ -397,7 +398,7 @@ public final class MessageDao_Impl implements MessageDao {
 
   @Override
   public Flow<List<MessageEntity>> getByChannel(final String channelId) {
-    final String _sql = "SELECT * FROM messages WHERE channelId = ? ORDER BY hlcPhysicalMs DESC, hlcCounter DESC";
+    final String _sql = "SELECT * FROM messages WHERE channelId = ? ORDER BY hlcPhysicalMs ASC, hlcCounter ASC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
     int _argIndex = 1;
     _statement.bindString(_argIndex, channelId);
@@ -496,6 +497,36 @@ public final class MessageDao_Impl implements MessageDao {
             final String _item;
             _item = _cursor.getString(0);
             _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object countById(final String id, final Continuation<? super Integer> $completion) {
+    final String _sql = "SELECT COUNT(*) FROM messages WHERE id = ?";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
+    int _argIndex = 1;
+    _statement.bindString(_argIndex, id);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<Integer>() {
+      @Override
+      @NonNull
+      public Integer call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final Integer _result;
+          if (_cursor.moveToFirst()) {
+            final int _tmp;
+            _tmp = _cursor.getInt(0);
+            _result = _tmp;
+          } else {
+            _result = 0;
           }
           return _result;
         } finally {
