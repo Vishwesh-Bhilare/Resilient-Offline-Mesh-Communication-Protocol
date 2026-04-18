@@ -50,8 +50,9 @@ class BleConnectionManager @Inject constructor(
     private val rateLimiter: RateLimiter
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-    private val adapter: BluetoothAdapter? get() = bluetoothManager.adapter
+    private val bluetoothManager: BluetoothManager? =
+        context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+    private val adapter: BluetoothAdapter? get() = bluetoothManager?.adapter
     private var gattServer: BluetoothGattServer? = null
     private var meshService: BluetoothGattService? = null
     private var peerCollectionJob: Job? = null
@@ -59,6 +60,10 @@ class BleConnectionManager @Inject constructor(
 
     @SuppressLint("MissingPermission")
     fun start() {
+        if (bluetoothManager == null) {
+            Logger.w("BluetoothManager unavailable; skipping BLE connection manager startup")
+            return
+        }
         startServer()
         peerCollectionJob = scope.launch {
             scanner.peers.collect { peer ->
@@ -93,7 +98,11 @@ class BleConnectionManager @Inject constructor(
 
     @SuppressLint("MissingPermission")
     private fun startServer() {
-        gattServer = bluetoothManager.openGattServer(context, serverCallback)
+        val manager = bluetoothManager ?: run {
+            Logger.w("BluetoothManager unavailable; cannot open GATT server")
+            return
+        }
+        gattServer = manager.openGattServer(context, serverCallback)
         val props = BluetoothGattCharacteristic.PROPERTY_READ or
             BluetoothGattCharacteristic.PROPERTY_WRITE or
             BluetoothGattCharacteristic.PROPERTY_NOTIFY
