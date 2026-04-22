@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.mesh.app.service.MeshForegroundService
 import com.mesh.app.ui.chat.ChatScreen
 import dagger.hilt.android.AndroidEntryPoint
@@ -67,10 +70,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startMeshService() {
-        runCatching {
-            startForegroundService(Intent(this, MeshForegroundService::class.java))
-        }.onFailure {
-            // Service start can fail if permissions aren't granted; log and continue
+        val isForeground = ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+        if (!isForeground) {
+            Log.w("MainActivity", "Skipping startForegroundService because app is not in foreground") // FIX: 2 — avoid background FGS start on Android 12+
+            return
+        }
+
+        try {
+            startForegroundService(Intent(this, MeshForegroundService::class.java)) // FIX: 2 — guarded foreground-service start
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to start MeshForegroundService", e) // FIX: 2 — log ForegroundServiceStartNotAllowedException and other failures
         }
     }
 }

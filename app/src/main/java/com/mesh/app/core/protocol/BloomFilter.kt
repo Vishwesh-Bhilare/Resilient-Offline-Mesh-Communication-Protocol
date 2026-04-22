@@ -89,6 +89,7 @@ class BloomFilter @Inject constructor() {
     companion object {
         fun fromByteArray(bytes: ByteArray): BloomFilter {
             require(bytes.size <= Constants.BLOOM_FILTER_BYTES)
+            // FIX: 4 — this intentionally creates a standalone BloomFilter snapshot for peer state, not the DI singleton.
             return BloomFilter().apply {
                 System.arraycopy(bytes, 0, this.bits, 0, bytes.size)
             }

@@ -8,6 +8,7 @@ import androidx.work.WorkManager
 import com.mesh.app.core.protocol.BloomFilter
 import com.mesh.app.data.repository.MessageRepository
 import com.mesh.app.service.SyncWorker
+import com.mesh.app.util.Logger
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +40,9 @@ class MeshApplication : Application(), Configuration.Provider {
 
         // Populate bloom filter off the main thread — never block onCreate()
         applicationScope.launch {
-            messageRepository.ids().forEach { bloomFilter.add(it) }
+            runCatching {
+                messageRepository.ids().forEach { bloomFilter.add(it) }
+            }.onFailure { Logger.e("Failed to populate bloom filter on startup", it) } // FIX: 8 — catch and log startup bloom population failures
         }
 
         val request = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).build()

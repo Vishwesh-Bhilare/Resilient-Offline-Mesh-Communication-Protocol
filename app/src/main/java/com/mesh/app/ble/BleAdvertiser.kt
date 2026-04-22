@@ -114,7 +114,9 @@ class BleAdvertiser @Inject constructor(
 
     private fun buildData(): AdvertiseData {
         val payload = ByteArray(Constants.BLE_PAYLOAD_SIZE)
-        val idPrefix = keyManager.getDeviceId().take(8).chunked(2).map { it.toInt(16).toByte() }
+        val idPrefix = runCatching {
+            keyManager.getDeviceId().take(8).chunked(2).map { it.toInt(16).toByte() }
+        }.getOrDefault(listOf(0, 0, 0, 0).map { it.toByte() }) // FIX: 5 — fallback when device ID retrieval/parsing fails
         for (i in idPrefix.indices) payload[i] = idPrefix[i]
         payload[4] = 0
         System.arraycopy(bloomFilter.toByteArray(), 0, payload, 5, Constants.BLE_BLOOM_ADVERTISE_BYTES)

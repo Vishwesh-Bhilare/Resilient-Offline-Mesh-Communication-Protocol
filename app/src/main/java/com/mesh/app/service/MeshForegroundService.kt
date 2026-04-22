@@ -104,6 +104,10 @@ class MeshForegroundService : Service() {
     // -------------------------------------------------------------------------
 
     private fun startBleStack() {
+        if (!::advertiser.isInitialized || !::scanner.isInitialized || !::connectionManager.isInitialized) {
+            Logger.e("BLE stack fields not initialized, skipping startBleStack") // FIX: 6 — guard against early access before injection initialization
+            return
+        }
         if (!canStartBleStack()) {
             Logger.w("Cannot start BLE stack: missing permissions or Bluetooth unavailable")
             return
