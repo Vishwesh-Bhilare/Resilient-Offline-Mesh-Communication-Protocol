@@ -39,7 +39,6 @@ class KeyManager @Inject constructor(
     }
 
     private fun ensureBouncyCastle() {
-        // FIX: 4 — avoid provider replacement when full BC is already present; guard restricted provider mutation failures.
         try {
             val existing = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME)
             when {

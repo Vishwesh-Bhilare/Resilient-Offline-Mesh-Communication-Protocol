@@ -4,7 +4,7 @@ import com.mesh.app.util.Constants
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-class BloomFilter { // FIX: 1 — remove constructor injection/scoping to avoid duplicate Hilt binding with @Provides.
+class BloomFilter {
     private val bits = ByteArray(Constants.BLOOM_FILTER_BYTES)
     private val m = Constants.BLOOM_FILTER_BYTES * 8
     private val k = Constants.BLOOM_HASHES
@@ -85,10 +85,9 @@ class BloomFilter { // FIX: 1 — remove constructor injection/scoping to avoid 
 
     companion object {
         fun fromByteArray(bytes: ByteArray): BloomFilter {
-            require(bytes.isNotEmpty() && bytes.size <= Constants.BLOOM_FILTER_BYTES) { // FIX: 8 — reject empty bloom payloads with explicit bounds.
+            require(bytes.isNotEmpty() && bytes.size <= Constants.BLOOM_FILTER_BYTES) {
                 "BloomFilter byte array must be 1..${Constants.BLOOM_FILTER_BYTES} bytes, got ${bytes.size}"
             }
-            // FIX: 4 — this intentionally creates a standalone BloomFilter snapshot for peer state, not the DI singleton.
             return BloomFilter().apply {
                 System.arraycopy(bytes, 0, this.bits, 0, bytes.size)
             }

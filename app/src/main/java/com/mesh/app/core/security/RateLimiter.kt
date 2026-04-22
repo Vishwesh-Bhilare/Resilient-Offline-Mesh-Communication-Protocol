@@ -25,7 +25,7 @@ class TokenBucketRateLimiter(
     }
 }
 
-class RateLimiter { // FIX: 2 — remove constructor injection/scoping to avoid duplicate Hilt binding with @Provides.
+class RateLimiter {
     private val senderLimiter = TokenBucketRateLimiter(20, 20.0 / 60.0)
     private val globalLimiter = TokenBucketRateLimiter(200, 200.0 / 300.0)
     @Volatile
