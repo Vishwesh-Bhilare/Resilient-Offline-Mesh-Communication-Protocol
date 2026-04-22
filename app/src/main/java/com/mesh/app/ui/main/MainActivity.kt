@@ -67,15 +67,17 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startMeshService() {
-        try {
-            val intent = Intent(this, MeshForegroundService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent)
-            } else {
-                startService(intent)
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            try {
+                val intent = Intent(this, MeshForegroundService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to start MeshForegroundService", e)
             }
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to start MeshForegroundService", e)
         }
     }
 }

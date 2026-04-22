@@ -68,7 +68,6 @@ MERGED from [androidx.emoji2:emoji2:1.3.0] /Users/anuragpatil/.gradle/caches/9.0
 MERGED from [androidx.core:core:1.13.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ffe88d8ad805703af9c9be1f29e5b9f4/transformed/core-1.13.1/AndroidManifest.xml:17:1-30:12
 MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/b715204610ebff3d5aea87d2af18c1b2/transformed/savedstate-ktx-1.2.1/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/1e6c3d5faa855f0102daef5cbdc818d1/transformed/savedstate-1.2.1/AndroidManifest.xml:17:1-22:12
-MERGED from [androidx.lifecycle:lifecycle-process:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ed6ea9159b1d0c8fb95a9a621f491f91/transformed/lifecycle-process-2.8.2/AndroidManifest.xml:17:1-35:12
 MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/33edc1bce75d232582322b839adf9786/transformed/lifecycle-livedata-core-ktx-2.8.2/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/d56c6e52e00e5672d31c26bcaf93085f/transformed/lifecycle-livedata-core-2.8.2/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.lifecycle:lifecycle-livedata:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/121450b080974929d257e68cd554ff70/transformed/lifecycle-livedata-2.8.2/AndroidManifest.xml:17:1-22:12
@@ -80,6 +79,7 @@ MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.2] /Users/anu
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-compose-android:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/712ff89e85f7181cd5cb85c95c0e475f/transformed/lifecycle-viewmodel-compose-release/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/7d576e71e9e7a25e6b94af278b6adf27/transformed/lifecycle-runtime-compose-release/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ec6fc133c9d4f38cdefad93882552a1c/transformed/lifecycle-runtime-ktx-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ed6ea9159b1d0c8fb95a9a621f491f91/transformed/lifecycle-process-2.8.2/AndroidManifest.xml:17:1-35:12
 MERGED from [androidx.lifecycle:lifecycle-service:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/eefd6db89cd4d68f8a28f318a932e2d2/transformed/lifecycle-service-2.8.2/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.room:room-runtime:2.6.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/0cfd9229ecc8dfa1103722833e71d135/transformed/room-runtime-2.6.1/AndroidManifest.xml:17:1-31:12
 MERGED from [androidx.room:room-ktx:2.6.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/cc48946d2c2f1f43d17aea1253d1c008/transformed/room-ktx-2.6.1/AndroidManifest.xml:17:1-22:12
@@ -89,12 +89,12 @@ MERGED from [androidx.sqlite:sqlite-framework:2.4.0] /Users/anuragpatil/.gradle/
 MERGED from [androidx.sqlite:sqlite:2.4.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/e8cf6fa1c21f380d6c79fcef806aad23/transformed/sqlite-2.4.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.annotation:annotation-experimental:1.4.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6fb2230a84c5443f71909bb0d207ad76/transformed/annotation-experimental-1.4.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.security:security-crypto:1.1.0-alpha06] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/e809bbe29ac72e3a512194e447a20235/transformed/security-crypto-1.1.0-alpha06/AndroidManifest.xml:17:1-22:12
-MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ac201ef6278e719756b45ddc838e96f5/transformed/core-runtime-2.2.0/AndroidManifest.xml:17:1-22:12
-MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/cecf49e8223eb435cbf8abd62937b721/transformed/interpolator-1.0.0/AndroidManifest.xml:17:1-22:12
-MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6c6e800315a41da1571bbfc46c7ce4af/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:17:1-27:12
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/4f1b2e9f8d0d99c12babe59c64952cb0/transformed/profileinstaller-1.3.1/AndroidManifest.xml:17:1-55:12
 MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/8160e3c86759412d014142c1f620b05e/transformed/startup-runtime-1.1.1/AndroidManifest.xml:17:1-33:12
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ac201ef6278e719756b45ddc838e96f5/transformed/core-runtime-2.2.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.tracing:tracing:1.0.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/dd9565a55b9603f29f6361d9a8b41399/transformed/tracing-1.0.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/cecf49e8223eb435cbf8abd62937b721/transformed/interpolator-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6c6e800315a41da1571bbfc46c7ce4af/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:17:1-27:12
 MERGED from [com.google.dagger:dagger-lint-aar:2.51.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/f8ae3e15bc366acf5e0a551a40aa5e9e/transformed/dagger-lint-aar-2.51.1/AndroidManifest.xml:16:1-19:12
 	package
 		INJECTED from /Users/anuragpatil/Resilient-Offline-Mesh-Communication-Protocol/app/src/main/AndroidManifest.xml
@@ -193,12 +193,12 @@ MERGED from [androidx.lifecycle:lifecycle-process:2.8.2] /Users/anuragpatil/.gra
 MERGED from [androidx.lifecycle:lifecycle-process:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ed6ea9159b1d0c8fb95a9a621f491f91/transformed/lifecycle-process-2.8.2/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.room:room-runtime:2.6.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/0cfd9229ecc8dfa1103722833e71d135/transformed/room-runtime-2.6.1/AndroidManifest.xml:23:5-29:19
 MERGED from [androidx.room:room-runtime:2.6.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/0cfd9229ecc8dfa1103722833e71d135/transformed/room-runtime-2.6.1/AndroidManifest.xml:23:5-29:19
-MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6c6e800315a41da1571bbfc46c7ce4af/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
-MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6c6e800315a41da1571bbfc46c7ce4af/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/4f1b2e9f8d0d99c12babe59c64952cb0/transformed/profileinstaller-1.3.1/AndroidManifest.xml:23:5-53:19
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/4f1b2e9f8d0d99c12babe59c64952cb0/transformed/profileinstaller-1.3.1/AndroidManifest.xml:23:5-53:19
 MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/8160e3c86759412d014142c1f620b05e/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
 MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/8160e3c86759412d014142c1f620b05e/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6c6e800315a41da1571bbfc46c7ce4af/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6c6e800315a41da1571bbfc46c7ce4af/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
 	android:extractNativeLibs
 		INJECTED from /Users/anuragpatil/Resilient-Offline-Mesh-Communication-Protocol/app/src/main/AndroidManifest.xml
 	android:appComponentFactory
@@ -342,8 +342,6 @@ MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] /Users/anuragpatil/.gradl
 MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/b715204610ebff3d5aea87d2af18c1b2/transformed/savedstate-ktx-1.2.1/AndroidManifest.xml:20:5-44
 MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/1e6c3d5faa855f0102daef5cbdc818d1/transformed/savedstate-1.2.1/AndroidManifest.xml:20:5-44
 MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/1e6c3d5faa855f0102daef5cbdc818d1/transformed/savedstate-1.2.1/AndroidManifest.xml:20:5-44
-MERGED from [androidx.lifecycle:lifecycle-process:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ed6ea9159b1d0c8fb95a9a621f491f91/transformed/lifecycle-process-2.8.2/AndroidManifest.xml:21:5-44
-MERGED from [androidx.lifecycle:lifecycle-process:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ed6ea9159b1d0c8fb95a9a621f491f91/transformed/lifecycle-process-2.8.2/AndroidManifest.xml:21:5-44
 MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/33edc1bce75d232582322b839adf9786/transformed/lifecycle-livedata-core-ktx-2.8.2/AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/33edc1bce75d232582322b839adf9786/transformed/lifecycle-livedata-core-ktx-2.8.2/AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/d56c6e52e00e5672d31c26bcaf93085f/transformed/lifecycle-livedata-core-2.8.2/AndroidManifest.xml:20:5-44
@@ -366,6 +364,8 @@ MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.2] /Users/
 MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/7d576e71e9e7a25e6b94af278b6adf27/transformed/lifecycle-runtime-compose-release/AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ec6fc133c9d4f38cdefad93882552a1c/transformed/lifecycle-runtime-ktx-release/AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ec6fc133c9d4f38cdefad93882552a1c/transformed/lifecycle-runtime-ktx-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ed6ea9159b1d0c8fb95a9a621f491f91/transformed/lifecycle-process-2.8.2/AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ed6ea9159b1d0c8fb95a9a621f491f91/transformed/lifecycle-process-2.8.2/AndroidManifest.xml:21:5-44
 MERGED from [androidx.lifecycle:lifecycle-service:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/eefd6db89cd4d68f8a28f318a932e2d2/transformed/lifecycle-service-2.8.2/AndroidManifest.xml:5:5-44
 MERGED from [androidx.lifecycle:lifecycle-service:2.8.2] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/eefd6db89cd4d68f8a28f318a932e2d2/transformed/lifecycle-service-2.8.2/AndroidManifest.xml:5:5-44
 MERGED from [androidx.room:room-runtime:2.6.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/0cfd9229ecc8dfa1103722833e71d135/transformed/room-runtime-2.6.1/AndroidManifest.xml:21:5-44
@@ -384,18 +384,18 @@ MERGED from [androidx.annotation:annotation-experimental:1.4.0] /Users/anuragpat
 MERGED from [androidx.annotation:annotation-experimental:1.4.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6fb2230a84c5443f71909bb0d207ad76/transformed/annotation-experimental-1.4.0/AndroidManifest.xml:5:5-44
 MERGED from [androidx.security:security-crypto:1.1.0-alpha06] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/e809bbe29ac72e3a512194e447a20235/transformed/security-crypto-1.1.0-alpha06/AndroidManifest.xml:20:5-44
 MERGED from [androidx.security:security-crypto:1.1.0-alpha06] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/e809bbe29ac72e3a512194e447a20235/transformed/security-crypto-1.1.0-alpha06/AndroidManifest.xml:20:5-44
-MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ac201ef6278e719756b45ddc838e96f5/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
-MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ac201ef6278e719756b45ddc838e96f5/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
-MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/cecf49e8223eb435cbf8abd62937b721/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
-MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/cecf49e8223eb435cbf8abd62937b721/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
-MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6c6e800315a41da1571bbfc46c7ce4af/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
-MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6c6e800315a41da1571bbfc46c7ce4af/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/4f1b2e9f8d0d99c12babe59c64952cb0/transformed/profileinstaller-1.3.1/AndroidManifest.xml:21:5-44
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/4f1b2e9f8d0d99c12babe59c64952cb0/transformed/profileinstaller-1.3.1/AndroidManifest.xml:21:5-44
 MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/8160e3c86759412d014142c1f620b05e/transformed/startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
 MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/8160e3c86759412d014142c1f620b05e/transformed/startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ac201ef6278e719756b45ddc838e96f5/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/ac201ef6278e719756b45ddc838e96f5/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
 MERGED from [androidx.tracing:tracing:1.0.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/dd9565a55b9603f29f6361d9a8b41399/transformed/tracing-1.0.0/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.tracing:tracing:1.0.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/dd9565a55b9603f29f6361d9a8b41399/transformed/tracing-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/cecf49e8223eb435cbf8abd62937b721/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/cecf49e8223eb435cbf8abd62937b721/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6c6e800315a41da1571bbfc46c7ce4af/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/6c6e800315a41da1571bbfc46c7ce4af/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
 MERGED from [com.google.dagger:dagger-lint-aar:2.51.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/f8ae3e15bc366acf5e0a551a40aa5e9e/transformed/dagger-lint-aar-2.51.1/AndroidManifest.xml:18:3-42
 MERGED from [com.google.dagger:dagger-lint-aar:2.51.1] /Users/anuragpatil/.gradle/caches/9.0-milestone-1/transforms/f8ae3e15bc366acf5e0a551a40aa5e9e/transformed/dagger-lint-aar-2.51.1/AndroidManifest.xml:18:3-42
 	android:targetSdkVersion
