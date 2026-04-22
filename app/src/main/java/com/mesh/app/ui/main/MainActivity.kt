@@ -3,7 +3,6 @@ package com.mesh.app.ui.main
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.app.ForegroundServiceStartNotAllowedException
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -73,16 +72,14 @@ class MainActivity : ComponentActivity() {
     private fun startMeshService() {
         val isForeground = ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
         if (!isForeground) {
-            Log.w("MainActivity", "Skipping startForegroundService because app is not in foreground")
+            Log.w("MainActivity", "Skipping startForegroundService because app is not in foreground") // FIX: 2 — avoid background FGS start on Android 12+
             return
         }
 
         try {
-            startForegroundService(Intent(this, MeshForegroundService::class.java))
-        } catch (e: ForegroundServiceStartNotAllowedException) {
-            Log.e("MainActivity", "Foreground service start not allowed", e)
+            startForegroundService(Intent(this, MeshForegroundService::class.java)) // FIX: 2 — guarded foreground-service start
         } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to start MeshForegroundService", e)
+            Log.e("MainActivity", "Failed to start MeshForegroundService", e) // FIX: 2 — log ForegroundServiceStartNotAllowedException and other failures
         }
     }
 }
