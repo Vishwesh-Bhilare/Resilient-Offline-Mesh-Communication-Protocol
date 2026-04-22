@@ -17,7 +17,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.mesh.app.service.MeshForegroundService
 import com.mesh.app.ui.chat.ChatScreen
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,8 +26,8 @@ class MainActivity : ComponentActivity() {
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) {
-        if (hasAllRequiredPermissions()) {
+    ) { results ->
+        if (results.values.all { it }) {
             startMeshService()
         }
     }
@@ -70,16 +69,21 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startMeshService() {
-        val isForeground = ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
-        if (!isForeground) {
-            Log.w("MainActivity", "Skipping startForegroundService because app is not in foreground") // FIX: 2 — avoid background FGS start on Android 12+
+        // Check if the activity is at least started to comply with Foreground Service start restrictions
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            Log.w("MainActivity", "Skipping startForegroundService because activity is not in foreground")
             return
         }
 
         try {
-            startForegroundService(Intent(this, MeshForegroundService::class.java)) // FIX: 2 — guarded foreground-service start
+            val intent = Intent(this, MeshForegroundService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
         } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to start MeshForegroundService", e) // FIX: 2 — log ForegroundServiceStartNotAllowedException and other failures
+            Log.e("MainActivity", "Failed to start MeshForegroundService", e)
         }
     }
 }
