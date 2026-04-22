@@ -42,8 +42,7 @@ class InProgressRepository @Inject constructor(
         if (received.size != existing.totalChunks) return null
         val chunks = chunkStore[messageId]
         if (chunks == null || chunks.size != existing.totalChunks) {
-            dao.deleteById(messageId)
-            return null
+            return null // FIX: 3 — do not delete persisted in-progress record when in-memory chunks are absent
         }
         return (0 until existing.totalChunks).map { idx -> chunks[idx] ?: return null }
     }

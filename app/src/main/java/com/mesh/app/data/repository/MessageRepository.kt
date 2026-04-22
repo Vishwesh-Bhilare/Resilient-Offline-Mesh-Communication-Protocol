@@ -62,11 +62,11 @@ class MessageRepository @Inject constructor(
         return runCatching {
             val publicKeyBytes = Base64.decode(message.public_key, Base64.NO_WRAP)
             val keySpec = X509EncodedKeySpec(publicKeyBytes)
-            val publicKey = KeyFactory.getInstance("Ed25519").generatePublic(keySpec)
+            val publicKey = KeyFactory.getInstance("1.3.101.112", "BC").generatePublic(keySpec) // FIX: 1 — use BC provider for Ed25519 KeyFactory on Android
             SignatureUtil.verify(message.id + message.content, message.signature, publicKey)
         }.onFailure {
             Logger.w("Failed to verify signature for message ${message.id}", it)
-        }.getOrDefault(false)
+        }.getOrElse { false } // FIX: 1 — return false on any verification failure
     }
 }
 
