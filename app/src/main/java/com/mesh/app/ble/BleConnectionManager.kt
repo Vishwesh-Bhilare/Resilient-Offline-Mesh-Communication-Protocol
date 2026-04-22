@@ -65,7 +65,7 @@ class BleConnectionManager @Inject constructor(
             return
         }
         startServer()
-        peerCollectionJob?.cancel() // FIX: 5 — cancel existing peer collection before launching a new collector.
+        peerCollectionJob?.cancel()
         peerCollectionJob = scope.launch {
             scanner.peers.collect { peer ->
                 launch {
@@ -100,7 +100,7 @@ class BleConnectionManager @Inject constructor(
     @SuppressLint("MissingPermission")
     private fun startServer() {
         if (gattServer != null) {
-            Logger.d("GATT server already open; skipping startServer()") // FIX: 6 — prevent opening duplicate GATT servers.
+            Logger.d("GATT server already open; skipping startServer()")
             return
         }
         val manager = bluetoothManager ?: run {

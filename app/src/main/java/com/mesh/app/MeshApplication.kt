@@ -42,7 +42,7 @@ class MeshApplication : Application(), Configuration.Provider {
         applicationScope.launch {
             runCatching {
                 messageRepository.ids().forEach { bloomFilter.add(it) }
-            }.onFailure { Logger.e("Failed to populate bloom filter on startup", it) } // FIX: 8 — catch and log startup bloom population failures
+            }.onFailure { Logger.e("Failed to populate bloom filter on startup", it) }
         }
 
         val request = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).build()
