@@ -15,5 +15,6 @@ import javax.inject.Singleton
 object AppModule {
     @Provides @Singleton fun provideBloomFilter(): BloomFilter = BloomFilter()
     @Provides @Singleton fun provideRateLimiter(): RateLimiter = RateLimiter()
+    // FIX: 7 — HlcClock has no @Inject constructor; it is provided exclusively through this module.
     @Provides @Singleton fun provideHlcClock(keyManager: KeyManager): HlcClock = HlcClock(keyManager.getDeviceId())
 }
