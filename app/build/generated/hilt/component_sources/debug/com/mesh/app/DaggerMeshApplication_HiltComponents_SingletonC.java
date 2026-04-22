@@ -2,6 +2,7 @@ package com.mesh.app;
 
 import android.app.Activity;
 import android.app.Service;
+import android.content.Context;
 import android.view.View;
 import androidx.fragment.app.Fragment;
 import androidx.hilt.work.HiltWorkerFactory;
@@ -10,6 +11,7 @@ import androidx.hilt.work.WorkerFactoryModule_ProvideFactoryFactory;
 import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModel;
 import androidx.work.ListenableWorker;
+import androidx.work.WorkerParameters;
 import com.mesh.app.ble.BleAdvertiser;
 import com.mesh.app.ble.BleConnectionManager;
 import com.mesh.app.ble.BleScanner;
@@ -37,6 +39,8 @@ import com.mesh.app.gateway.ApiService;
 import com.mesh.app.gateway.GatewayManager;
 import com.mesh.app.service.MeshForegroundService;
 import com.mesh.app.service.MeshForegroundService_MembersInjector;
+import com.mesh.app.service.SyncWorker;
+import com.mesh.app.service.SyncWorker_AssistedFactory;
 import com.mesh.app.ui.chat.ChatViewModel;
 import com.mesh.app.ui.chat.ChatViewModel_HiltModules;
 import com.mesh.app.ui.main.MainActivity;
@@ -65,6 +69,7 @@ import dagger.internal.LazyClassKeyMap;
 import dagger.internal.MapBuilder;
 import dagger.internal.Preconditions;
 import dagger.internal.Provider;
+import dagger.internal.SingleCheck;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -422,15 +427,15 @@ public final class DaggerMeshApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_mesh_app_ui_chat_ChatViewModel = "com.mesh.app.ui.chat.ChatViewModel";
-
       static String com_mesh_app_ui_main_MainViewModel = "com.mesh.app.ui.main.MainViewModel";
 
-      @KeepFieldType
-      ChatViewModel com_mesh_app_ui_chat_ChatViewModel2;
+      static String com_mesh_app_ui_chat_ChatViewModel = "com.mesh.app.ui.chat.ChatViewModel";
 
       @KeepFieldType
       MainViewModel com_mesh_app_ui_main_MainViewModel2;
+
+      @KeepFieldType
+      ChatViewModel com_mesh_app_ui_chat_ChatViewModel2;
     }
   }
 
@@ -609,23 +614,25 @@ public final class DaggerMeshApplication_HiltComponents_SingletonC {
 
     private Provider<MessageRepository> messageRepositoryProvider;
 
-    private Provider<BloomFilter> provideBloomFilterProvider;
+    private Provider<ApiService> provideApiServiceProvider;
+
+    private Provider<GatewayManager> gatewayManagerProvider;
+
+    private Provider<InProgressRepository> inProgressRepositoryProvider;
+
+    private Provider<SyncWorker_AssistedFactory> syncWorker_AssistedFactoryProvider;
 
     private Provider<KeyManager> keyManagerProvider;
 
     private Provider<HlcClock> provideHlcClockProvider;
 
-    private Provider<ApiService> provideApiServiceProvider;
-
-    private Provider<GatewayManager> gatewayManagerProvider;
+    private Provider<BloomFilter> provideBloomFilterProvider;
 
     private Provider<BleAdvertiser> bleAdvertiserProvider;
 
     private Provider<PeerRepository> peerRepositoryProvider;
 
     private Provider<BleScanner> bleScannerProvider;
-
-    private Provider<InProgressRepository> inProgressRepositoryProvider;
 
     private Provider<SyncManager> syncManagerProvider;
 
@@ -639,38 +646,44 @@ public final class DaggerMeshApplication_HiltComponents_SingletonC {
 
     }
 
-    private HiltWorkerFactory hiltWorkerFactory() {
-      return WorkerFactoryModule_ProvideFactoryFactory.provideFactory(Collections.<String, javax.inject.Provider<WorkerAssistedFactory<? extends ListenableWorker>>>emptyMap());
-    }
-
     private MessageDao messageDao() {
       return DatabaseModule_ProvideMessageDaoFactory.provideMessageDao(provideDatabaseProvider.get());
-    }
-
-    private PeerDao peerDao() {
-      return DatabaseModule_ProvidePeerDaoFactory.providePeerDao(provideDatabaseProvider.get());
     }
 
     private InProgressDao inProgressDao() {
       return DatabaseModule_ProvideInProgressDaoFactory.provideInProgressDao(provideDatabaseProvider.get());
     }
 
+    private Map<String, javax.inject.Provider<WorkerAssistedFactory<? extends ListenableWorker>>> mapOfStringAndProviderOfWorkerAssistedFactoryOf(
+        ) {
+      return Collections.<String, javax.inject.Provider<WorkerAssistedFactory<? extends ListenableWorker>>>singletonMap("com.mesh.app.service.SyncWorker", ((Provider) syncWorker_AssistedFactoryProvider));
+    }
+
+    private HiltWorkerFactory hiltWorkerFactory() {
+      return WorkerFactoryModule_ProvideFactoryFactory.provideFactory(mapOfStringAndProviderOfWorkerAssistedFactoryOf());
+    }
+
+    private PeerDao peerDao() {
+      return DatabaseModule_ProvidePeerDaoFactory.providePeerDao(provideDatabaseProvider.get());
+    }
+
     @SuppressWarnings("unchecked")
     private void initialize(final ApplicationContextModule applicationContextModuleParam) {
-      this.provideDatabaseProvider = DoubleCheck.provider(new SwitchingProvider<AppDatabase>(singletonCImpl, 1));
-      this.messageRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<MessageRepository>(singletonCImpl, 0));
-      this.provideBloomFilterProvider = DoubleCheck.provider(new SwitchingProvider<BloomFilter>(singletonCImpl, 2));
-      this.keyManagerProvider = DoubleCheck.provider(new SwitchingProvider<KeyManager>(singletonCImpl, 3));
-      this.provideHlcClockProvider = DoubleCheck.provider(new SwitchingProvider<HlcClock>(singletonCImpl, 4));
-      this.provideApiServiceProvider = DoubleCheck.provider(new SwitchingProvider<ApiService>(singletonCImpl, 7));
-      this.gatewayManagerProvider = DoubleCheck.provider(new SwitchingProvider<GatewayManager>(singletonCImpl, 6));
-      this.bleAdvertiserProvider = DoubleCheck.provider(new SwitchingProvider<BleAdvertiser>(singletonCImpl, 5));
-      this.peerRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<PeerRepository>(singletonCImpl, 8));
-      this.bleScannerProvider = DoubleCheck.provider(new SwitchingProvider<BleScanner>(singletonCImpl, 9));
-      this.inProgressRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<InProgressRepository>(singletonCImpl, 12));
-      this.syncManagerProvider = DoubleCheck.provider(new SwitchingProvider<SyncManager>(singletonCImpl, 11));
-      this.provideRateLimiterProvider = DoubleCheck.provider(new SwitchingProvider<RateLimiter>(singletonCImpl, 13));
-      this.bleConnectionManagerProvider = DoubleCheck.provider(new SwitchingProvider<BleConnectionManager>(singletonCImpl, 10));
+      this.provideDatabaseProvider = DoubleCheck.provider(new SwitchingProvider<AppDatabase>(singletonCImpl, 2));
+      this.messageRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<MessageRepository>(singletonCImpl, 1));
+      this.provideApiServiceProvider = DoubleCheck.provider(new SwitchingProvider<ApiService>(singletonCImpl, 4));
+      this.gatewayManagerProvider = DoubleCheck.provider(new SwitchingProvider<GatewayManager>(singletonCImpl, 3));
+      this.inProgressRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<InProgressRepository>(singletonCImpl, 5));
+      this.syncWorker_AssistedFactoryProvider = SingleCheck.provider(new SwitchingProvider<SyncWorker_AssistedFactory>(singletonCImpl, 0));
+      this.keyManagerProvider = DoubleCheck.provider(new SwitchingProvider<KeyManager>(singletonCImpl, 6));
+      this.provideHlcClockProvider = DoubleCheck.provider(new SwitchingProvider<HlcClock>(singletonCImpl, 7));
+      this.provideBloomFilterProvider = DoubleCheck.provider(new SwitchingProvider<BloomFilter>(singletonCImpl, 9));
+      this.bleAdvertiserProvider = DoubleCheck.provider(new SwitchingProvider<BleAdvertiser>(singletonCImpl, 8));
+      this.peerRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<PeerRepository>(singletonCImpl, 10));
+      this.bleScannerProvider = DoubleCheck.provider(new SwitchingProvider<BleScanner>(singletonCImpl, 11));
+      this.syncManagerProvider = DoubleCheck.provider(new SwitchingProvider<SyncManager>(singletonCImpl, 13));
+      this.provideRateLimiterProvider = DoubleCheck.provider(new SwitchingProvider<RateLimiter>(singletonCImpl, 14));
+      this.bleConnectionManagerProvider = DoubleCheck.provider(new SwitchingProvider<BleConnectionManager>(singletonCImpl, 12));
     }
 
     @Override
@@ -695,8 +708,6 @@ public final class DaggerMeshApplication_HiltComponents_SingletonC {
 
     private MeshApplication injectMeshApplication2(MeshApplication instance) {
       MeshApplication_MembersInjector.injectWorkerFactory(instance, hiltWorkerFactory());
-      MeshApplication_MembersInjector.injectMessageRepository(instance, messageRepositoryProvider.get());
-      MeshApplication_MembersInjector.injectBloomFilter(instance, provideBloomFilterProvider.get());
       return instance;
     }
 
@@ -714,46 +725,54 @@ public final class DaggerMeshApplication_HiltComponents_SingletonC {
       @Override
       public T get() {
         switch (id) {
-          case 0: // com.mesh.app.data.repository.MessageRepository 
+          case 0: // com.mesh.app.service.SyncWorker_AssistedFactory 
+          return (T) new SyncWorker_AssistedFactory() {
+            @Override
+            public SyncWorker create(Context context, WorkerParameters params) {
+              return new SyncWorker(context, params, singletonCImpl.messageRepositoryProvider.get(), singletonCImpl.gatewayManagerProvider.get(), singletonCImpl.inProgressRepositoryProvider.get());
+            }
+          };
+
+          case 1: // com.mesh.app.data.repository.MessageRepository 
           return (T) new MessageRepository(singletonCImpl.messageDao());
 
-          case 1: // com.mesh.app.data.local.db.AppDatabase 
+          case 2: // com.mesh.app.data.local.db.AppDatabase 
           return (T) DatabaseModule_ProvideDatabaseFactory.provideDatabase(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 2: // com.mesh.app.core.protocol.BloomFilter 
-          return (T) AppModule_ProvideBloomFilterFactory.provideBloomFilter();
-
-          case 3: // com.mesh.app.core.identity.KeyManager 
-          return (T) new KeyManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
-
-          case 4: // com.mesh.app.core.protocol.HlcClock 
-          return (T) AppModule_ProvideHlcClockFactory.provideHlcClock(singletonCImpl.keyManagerProvider.get());
-
-          case 5: // com.mesh.app.ble.BleAdvertiser 
-          return (T) new BleAdvertiser(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.keyManagerProvider.get(), singletonCImpl.provideBloomFilterProvider.get(), singletonCImpl.gatewayManagerProvider.get());
-
-          case 6: // com.mesh.app.gateway.GatewayManager 
+          case 3: // com.mesh.app.gateway.GatewayManager 
           return (T) new GatewayManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.messageRepositoryProvider.get(), singletonCImpl.provideApiServiceProvider.get());
 
-          case 7: // com.mesh.app.gateway.ApiService 
+          case 4: // com.mesh.app.gateway.ApiService 
           return (T) NetworkModule_ProvideApiServiceFactory.provideApiService();
 
-          case 8: // com.mesh.app.data.repository.PeerRepository 
-          return (T) new PeerRepository(singletonCImpl.peerDao());
-
-          case 9: // com.mesh.app.ble.BleScanner 
-          return (T) new BleScanner(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
-
-          case 10: // com.mesh.app.ble.BleConnectionManager 
-          return (T) new BleConnectionManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.bleScannerProvider.get(), singletonCImpl.syncManagerProvider.get(), singletonCImpl.keyManagerProvider.get(), singletonCImpl.provideBloomFilterProvider.get(), singletonCImpl.peerRepositoryProvider.get(), singletonCImpl.provideRateLimiterProvider.get());
-
-          case 11: // com.mesh.app.core.sync.SyncManager 
-          return (T) new SyncManager(singletonCImpl.messageRepositoryProvider.get(), singletonCImpl.inProgressRepositoryProvider.get(), singletonCImpl.provideBloomFilterProvider.get(), singletonCImpl.bleAdvertiserProvider.get());
-
-          case 12: // com.mesh.app.data.repository.InProgressRepository 
+          case 5: // com.mesh.app.data.repository.InProgressRepository 
           return (T) new InProgressRepository(singletonCImpl.inProgressDao());
 
-          case 13: // com.mesh.app.core.security.RateLimiter 
+          case 6: // com.mesh.app.core.identity.KeyManager 
+          return (T) new KeyManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 7: // com.mesh.app.core.protocol.HlcClock 
+          return (T) AppModule_ProvideHlcClockFactory.provideHlcClock(singletonCImpl.keyManagerProvider.get());
+
+          case 8: // com.mesh.app.ble.BleAdvertiser 
+          return (T) new BleAdvertiser(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.keyManagerProvider.get(), singletonCImpl.provideBloomFilterProvider.get(), singletonCImpl.gatewayManagerProvider.get());
+
+          case 9: // com.mesh.app.core.protocol.BloomFilter 
+          return (T) AppModule_ProvideBloomFilterFactory.provideBloomFilter();
+
+          case 10: // com.mesh.app.data.repository.PeerRepository 
+          return (T) new PeerRepository(singletonCImpl.peerDao());
+
+          case 11: // com.mesh.app.ble.BleScanner 
+          return (T) new BleScanner(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 12: // com.mesh.app.ble.BleConnectionManager 
+          return (T) new BleConnectionManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.bleScannerProvider.get(), singletonCImpl.syncManagerProvider.get(), singletonCImpl.keyManagerProvider.get(), singletonCImpl.provideBloomFilterProvider.get(), singletonCImpl.peerRepositoryProvider.get(), singletonCImpl.provideRateLimiterProvider.get());
+
+          case 13: // com.mesh.app.core.sync.SyncManager 
+          return (T) new SyncManager(singletonCImpl.messageRepositoryProvider.get(), singletonCImpl.inProgressRepositoryProvider.get(), singletonCImpl.provideBloomFilterProvider.get(), singletonCImpl.bleAdvertiserProvider.get());
+
+          case 14: // com.mesh.app.core.security.RateLimiter 
           return (T) AppModule_ProvideRateLimiterFactory.provideRateLimiter();
 
           default: throw new AssertionError(id);

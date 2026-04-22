@@ -13,6 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -36,17 +37,20 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val missingPermissions = requiredPermissions().filter {
-            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
-        }
+        setContent {
+            LaunchedEffect(Unit) {
+                val missingPermissions = requiredPermissions().filter {
+                    checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+                }
 
-        if (missingPermissions.isEmpty()) {
-            startMeshService()
-        } else {
-            permissionLauncher.launch(missingPermissions.toTypedArray())
+                if (missingPermissions.isEmpty()) {
+                    startMeshService()
+                } else {
+                    permissionLauncher.launch(missingPermissions.toTypedArray())
+                }
+            }
+            MeshApp()
         }
-
-        setContent { MeshApp() }
     }
 
     private fun requiredPermissions(): List<String> = buildList {
@@ -55,8 +59,6 @@ class MainActivity : ComponentActivity() {
             add(Manifest.permission.BLUETOOTH_CONNECT)
             add(Manifest.permission.BLUETOOTH_ADVERTISE)
         } else {
-            add(Manifest.permission.BLUETOOTH)
-            add(Manifest.permission.BLUETOOTH_ADMIN)
             add(Manifest.permission.ACCESS_FINE_LOCATION)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -64,17 +66,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun hasAllRequiredPermissions(): Boolean = requiredPermissions().all {
-        checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
-    }
-
     private fun startMeshService() {
-        // Check if the activity is at least started to comply with Foreground Service start restrictions
-        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            Log.w("MainActivity", "Skipping startForegroundService because activity is not in foreground")
-            return
-        }
-
         try {
             val intent = Intent(this, MeshForegroundService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

@@ -20,8 +20,6 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "mesh.db")
-            // Prevents crashes when the schema changes during development
-            // (e.g. Room version mismatch on reinstall without uninstall)
             .fallbackToDestructiveMigration()
             .build()
 
