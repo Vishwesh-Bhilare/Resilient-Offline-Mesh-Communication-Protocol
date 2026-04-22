@@ -39,20 +39,26 @@ class KeyManager @Inject constructor(
     }
 
     private fun ensureBouncyCastle() {
-        // Remove Android's bundled (stripped) BC provider and insert the full one at position 1
-        // so that our Ed25519 implementation is used everywhere.
+        // FIX: 4 — avoid provider replacement when full BC is already present; guard restricted provider mutation failures.
         try {
-            val existingBc = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME)
-            if (existingBc != null && existingBc.javaClass.name != BouncyCastleProvider::class.java.name) {
-                Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME)
-                Security.insertProviderAt(BouncyCastleProvider(), 1)
-                Logger.i("Replaced Android BC provider with full BouncyCastle")
-            } else if (existingBc == null) {
-                Security.insertProviderAt(BouncyCastleProvider(), 1)
-                Logger.i("Inserted BouncyCastle provider")
+            val existing = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME)
+            when {
+                existing == null -> {
+                    Security.insertProviderAt(BouncyCastleProvider(), 1)
+                    Logger.i("Inserted BouncyCastle provider")
+                }
+                existing.javaClass.name == BouncyCastleProvider::class.java.name -> {
+                    // Already the correct full BC provider — no action needed
+                    Logger.d("BouncyCastle provider already present and correct")
+                }
+                else -> {
+                    Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME)
+                    Security.insertProviderAt(BouncyCastleProvider(), 1)
+                    Logger.i("Replaced Android BC stub with full BouncyCastle provider")
+                }
             }
         } catch (t: Throwable) {
-            Logger.w("BouncyCastle provider setup failed", t)
+            Logger.w("BouncyCastle provider setup failed — crypto operations may fail", t)
         }
     }
 

@@ -1,8 +1,6 @@
 package com.mesh.app.core.security
 
 import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
-import javax.inject.Singleton
 
 class TokenBucketRateLimiter(
     private val maxTokens: Int,
@@ -27,8 +25,7 @@ class TokenBucketRateLimiter(
     }
 }
 
-@Singleton
-class RateLimiter @Inject constructor() {
+class RateLimiter { // FIX: 2 — remove constructor injection/scoping to avoid duplicate Hilt binding with @Provides.
     private val senderLimiter = TokenBucketRateLimiter(20, 20.0 / 60.0)
     private val globalLimiter = TokenBucketRateLimiter(200, 200.0 / 300.0)
     @Volatile

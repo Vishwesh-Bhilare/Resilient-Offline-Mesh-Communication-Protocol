@@ -1,6 +1,7 @@
 package com.mesh.app.gateway
 
 import com.mesh.app.core.protocol.Message
+import kotlinx.serialization.Serializable
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -10,6 +11,7 @@ interface ApiService {
     suspend fun publishMessage(@Body msg: MessageDto): Response<Unit>
 }
 
+@Serializable // FIX: 3 — required for Retrofit kotlinx-serialization converter when used as @Body.
 data class MessageDto(
     val message_id: String,
     val sender: String,
