@@ -422,15 +422,15 @@ public final class DaggerMeshApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_mesh_app_ui_main_MainViewModel = "com.mesh.app.ui.main.MainViewModel";
-
       static String com_mesh_app_ui_chat_ChatViewModel = "com.mesh.app.ui.chat.ChatViewModel";
 
-      @KeepFieldType
-      MainViewModel com_mesh_app_ui_main_MainViewModel2;
+      static String com_mesh_app_ui_main_MainViewModel = "com.mesh.app.ui.main.MainViewModel";
 
       @KeepFieldType
       ChatViewModel com_mesh_app_ui_chat_ChatViewModel2;
+
+      @KeepFieldType
+      MainViewModel com_mesh_app_ui_main_MainViewModel2;
     }
   }
 

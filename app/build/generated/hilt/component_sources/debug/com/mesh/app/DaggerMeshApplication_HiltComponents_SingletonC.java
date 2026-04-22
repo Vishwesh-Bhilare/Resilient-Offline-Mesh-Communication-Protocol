@@ -474,15 +474,15 @@ public final class DaggerMeshApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_mesh_app_ui_chat_ChatViewModel = "com.mesh.app.ui.chat.ChatViewModel";
-
       static String com_mesh_app_ui_main_MainViewModel = "com.mesh.app.ui.main.MainViewModel";
 
-      @KeepFieldType
-      ChatViewModel com_mesh_app_ui_chat_ChatViewModel2;
+      static String com_mesh_app_ui_chat_ChatViewModel = "com.mesh.app.ui.chat.ChatViewModel";
 
       @KeepFieldType
       MainViewModel com_mesh_app_ui_main_MainViewModel2;
+
+      @KeepFieldType
+      ChatViewModel com_mesh_app_ui_chat_ChatViewModel2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -730,7 +730,7 @@ public final class DaggerMeshApplication_HiltComponents_SingletonC {
           return (T) AppModule_ProvideHlcClockFactory.provideHlcClock(singletonCImpl.keyManagerProvider.get());
 
           case 5: // com.mesh.app.ble.BleAdvertiser 
-          return (T) new BleAdvertiser(singletonCImpl.keyManagerProvider.get(), singletonCImpl.provideBloomFilterProvider.get(), singletonCImpl.gatewayManagerProvider.get());
+          return (T) new BleAdvertiser(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.keyManagerProvider.get(), singletonCImpl.provideBloomFilterProvider.get(), singletonCImpl.gatewayManagerProvider.get());
 
           case 6: // com.mesh.app.gateway.GatewayManager 
           return (T) new GatewayManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.messageRepositoryProvider.get(), singletonCImpl.provideApiServiceProvider.get());
@@ -742,7 +742,7 @@ public final class DaggerMeshApplication_HiltComponents_SingletonC {
           return (T) new PeerRepository(singletonCImpl.peerDao());
 
           case 9: // com.mesh.app.ble.BleScanner 
-          return (T) new BleScanner();
+          return (T) new BleScanner(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
           case 10: // com.mesh.app.ble.BleConnectionManager 
           return (T) new BleConnectionManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.bleScannerProvider.get(), singletonCImpl.syncManagerProvider.get(), singletonCImpl.keyManagerProvider.get(), singletonCImpl.provideBloomFilterProvider.get(), singletonCImpl.peerRepositoryProvider.get(), singletonCImpl.provideRateLimiterProvider.get());

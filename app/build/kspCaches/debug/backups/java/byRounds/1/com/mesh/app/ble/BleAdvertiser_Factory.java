@@ -1,5 +1,6 @@
 package com.mesh.app.ble;
 
+import android.content.Context;
 import com.mesh.app.core.identity.KeyManager;
 import com.mesh.app.core.protocol.BloomFilter;
 import com.mesh.app.gateway.GatewayManager;
@@ -11,7 +12,7 @@ import javax.annotation.processing.Generated;
 import javax.inject.Provider;
 
 @ScopeMetadata("javax.inject.Singleton")
-@QualifierMetadata
+@QualifierMetadata("dagger.hilt.android.qualifiers.ApplicationContext")
 @DaggerGenerated
 @Generated(
     value = "dagger.internal.codegen.ComponentProcessor",
@@ -25,14 +26,18 @@ import javax.inject.Provider;
     "cast"
 })
 public final class BleAdvertiser_Factory implements Factory<BleAdvertiser> {
+  private final Provider<Context> contextProvider;
+
   private final Provider<KeyManager> keyManagerProvider;
 
   private final Provider<BloomFilter> bloomFilterProvider;
 
   private final Provider<GatewayManager> gatewayManagerProvider;
 
-  public BleAdvertiser_Factory(Provider<KeyManager> keyManagerProvider,
-      Provider<BloomFilter> bloomFilterProvider, Provider<GatewayManager> gatewayManagerProvider) {
+  public BleAdvertiser_Factory(Provider<Context> contextProvider,
+      Provider<KeyManager> keyManagerProvider, Provider<BloomFilter> bloomFilterProvider,
+      Provider<GatewayManager> gatewayManagerProvider) {
+    this.contextProvider = contextProvider;
     this.keyManagerProvider = keyManagerProvider;
     this.bloomFilterProvider = bloomFilterProvider;
     this.gatewayManagerProvider = gatewayManagerProvider;
@@ -40,16 +45,17 @@ public final class BleAdvertiser_Factory implements Factory<BleAdvertiser> {
 
   @Override
   public BleAdvertiser get() {
-    return newInstance(keyManagerProvider.get(), bloomFilterProvider.get(), gatewayManagerProvider.get());
+    return newInstance(contextProvider.get(), keyManagerProvider.get(), bloomFilterProvider.get(), gatewayManagerProvider.get());
   }
 
-  public static BleAdvertiser_Factory create(Provider<KeyManager> keyManagerProvider,
-      Provider<BloomFilter> bloomFilterProvider, Provider<GatewayManager> gatewayManagerProvider) {
-    return new BleAdvertiser_Factory(keyManagerProvider, bloomFilterProvider, gatewayManagerProvider);
+  public static BleAdvertiser_Factory create(Provider<Context> contextProvider,
+      Provider<KeyManager> keyManagerProvider, Provider<BloomFilter> bloomFilterProvider,
+      Provider<GatewayManager> gatewayManagerProvider) {
+    return new BleAdvertiser_Factory(contextProvider, keyManagerProvider, bloomFilterProvider, gatewayManagerProvider);
   }
 
-  public static BleAdvertiser newInstance(KeyManager keyManager, BloomFilter bloomFilter,
-      GatewayManager gatewayManager) {
-    return new BleAdvertiser(keyManager, bloomFilter, gatewayManager);
+  public static BleAdvertiser newInstance(Context context, KeyManager keyManager,
+      BloomFilter bloomFilter, GatewayManager gatewayManager) {
+    return new BleAdvertiser(context, keyManager, bloomFilter, gatewayManager);
   }
 }
