@@ -69,6 +69,19 @@ class BleConnectionManager @Inject constructor(
         peerCollectionJob = scope.launch {
             scanner.peers.collect { peer ->
                 launch {
+                    val selfId = keyManager.getDeviceId()
+                    if (peer.deviceId.equals(selfId.take(8), ignoreCase = true)) {
+                        return@launch
+                    }
+                    val peerId = peer.deviceId.takeIf { it.isNotBlank() } ?: peer.address
+                    peerRepository.upsert(
+                        PeerEntity(
+                            peerId = peerId,
+                            lastSyncTime = System.currentTimeMillis(),
+                            syncHash = "",
+                            address = peer.address
+                        )
+                    )
                     if (activeConnections.containsKey(peer.address)) return@launch
                     activeConnections[peer.address] = true
                     connect(peer.address)
