@@ -23,6 +23,9 @@ object Constants {
     const val BLE_PAYLOAD_SIZE = 27
     const val RETRY_TIMEOUT_MS = 5_000L
     const val RETRY_MAX = 3
+    const val CHANNEL_PRESENCE = "presence"
+    const val PING_PREFIX = "PING:"
+    const val PRESENCE_PING_INTERVAL_MS = 15_000L
 
     val SERVICE_UUID: UUID = UUID.fromString("12345678-1234-1234-1234-123456789abc")
     val HELLO_CHAR_UUID: UUID = UUID.fromString("12345678-1234-1234-1234-123456789001")

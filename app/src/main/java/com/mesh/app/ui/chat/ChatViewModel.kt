@@ -23,7 +23,7 @@ class ChatViewModel @Inject constructor(
     private val advertiser: BleAdvertiser,
     private val bloomFilter: BloomFilter
 ) : ViewModel() {
-    val messages: StateFlow<List<Message>> = messageRepository.observeAll()
+    val messages: StateFlow<List<Message>> = messageRepository.observeChatMessages()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun sendMessage(text: String, channelId: String?) {
