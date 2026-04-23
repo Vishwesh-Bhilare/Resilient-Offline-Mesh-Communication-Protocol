@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mesh.app.data.repository.PeerRepository
 import com.mesh.app.gateway.GatewayManager
+import com.mesh.app.service.MeshRuntimeController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +15,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     peerRepository: PeerRepository,
-    gatewayManager: GatewayManager
+    gatewayManager: GatewayManager,
+    private val meshRuntimeController: MeshRuntimeController
 ) : ViewModel() {
     val peerCount: StateFlow<Int> = peerRepository.observePeers()
         .map { it.size }
@@ -25,4 +27,10 @@ class MainViewModel @Inject constructor(
 
     val isGateway: StateFlow<Boolean> = kotlinx.coroutines.flow.flowOf(safeHasInternet(gatewayManager))
         .stateIn(viewModelScope, SharingStarted.Eagerly, safeHasInternet(gatewayManager))
+
+    val isMeshEnabled: StateFlow<Boolean> = meshRuntimeController.enabled
+
+    fun setMeshEnabled(enabled: Boolean) {
+        meshRuntimeController.setEnabled(enabled)
+    }
 }
