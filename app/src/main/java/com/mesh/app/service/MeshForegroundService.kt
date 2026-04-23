@@ -4,7 +4,6 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
@@ -23,6 +22,7 @@ import com.mesh.app.core.protocol.HlcClock
 import com.mesh.app.core.protocol.Message
 import com.mesh.app.data.repository.MessageRepository
 import com.mesh.app.gateway.GatewayManager
+import com.mesh.app.util.Constants
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -135,16 +135,15 @@ class MeshForegroundService : Service() {
         presenceJob = scope.launch {
             while (isActive) {
                 runCatching {
-                    val content = "PING:${keyManager.getDeviceId()}"
-                    val ping = Message.create(content, CHANNEL_PRESENCE, keyManager, hlcClock.now())
+                    val content = "${Constants.PING_PREFIX}${keyManager.getDeviceId()}"
+                    val ping = Message.create(content, Constants.CHANNEL_PRESENCE, keyManager, hlcClock.now())
                     messageRepository.save(ping)
                     bloomFilter.add(ping.id)
                     advertiser.refreshBloomAndReadvertise()
-                    gatewayManager.publishUnpublished()
                 }.onFailure {
                     Log.w("MeshService", "Presence ping failed", it)
                 }
-                delay(PING_INTERVAL_MS)
+                delay(Constants.PRESENCE_PING_INTERVAL_MS)
             }
         }
     }
@@ -173,7 +172,5 @@ class MeshForegroundService : Service() {
     companion object {
         const val ACTION_ENABLE = "com.mesh.app.action.ENABLE_MESH"
         const val ACTION_DISABLE = "com.mesh.app.action.DISABLE_MESH"
-        private const val CHANNEL_PRESENCE = "presence"
-        private const val PING_INTERVAL_MS = 15_000L
     }
 }

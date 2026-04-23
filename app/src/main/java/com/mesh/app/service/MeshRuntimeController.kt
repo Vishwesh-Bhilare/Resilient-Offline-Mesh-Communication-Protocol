@@ -2,6 +2,7 @@ package com.mesh.app.service
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +25,7 @@ class MeshRuntimeController @Inject constructor(
             action = if (enabled) MeshForegroundService.ACTION_ENABLE else MeshForegroundService.ACTION_DISABLE
         }
 
-        if (enabled) {
+        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
         } else {
             context.startService(intent)

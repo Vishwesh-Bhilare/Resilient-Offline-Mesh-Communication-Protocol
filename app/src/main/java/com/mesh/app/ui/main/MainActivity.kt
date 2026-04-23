@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mesh.app.ui.chat.ChatScreen
+import com.mesh.app.ui.logs.LogsScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -84,7 +85,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class MainTab { NETWORK, CHAT }
+private enum class MainTab { NETWORK, CHAT, LOGS }
 
 @Composable
 private fun MeshApp(
@@ -112,6 +113,12 @@ private fun MeshApp(
                         label = { Text("Chat") },
                         icon = { Text("💬") }
                     )
+                    NavigationBarItem(
+                        selected = tab == MainTab.LOGS,
+                        onClick = { tab = MainTab.LOGS },
+                        label = { Text("Logs") },
+                        icon = { Text("📡") }
+                    )
                 }
             }
         ) { innerPadding ->
@@ -132,6 +139,10 @@ private fun MeshApp(
 
                 MainTab.CHAT -> Box(modifier = Modifier.padding(innerPadding)) {
                     ChatScreen()
+                }
+
+                MainTab.LOGS -> Box(modifier = Modifier.padding(innerPadding)) {
+                    LogsScreen()
                 }
             }
         }

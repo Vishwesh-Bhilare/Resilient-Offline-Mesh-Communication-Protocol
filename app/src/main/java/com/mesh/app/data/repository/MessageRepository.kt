@@ -23,6 +23,14 @@ class MessageRepository @Inject constructor(
         list.map { it.toDomain() }
     }
 
+    fun observeChatMessages(): Flow<List<Message>> = observeAll().map { list ->
+        list.filterNot { it.channel_id == Constants.CHANNEL_PRESENCE || it.content.startsWith(Constants.PING_PREFIX) }
+    }
+
+    fun observePresenceLogs(): Flow<List<Message>> = observeAll().map { list ->
+        list.filter { it.channel_id == Constants.CHANNEL_PRESENCE || it.content.startsWith(Constants.PING_PREFIX) }
+    }
+
     fun observeChannel(channelId: String): Flow<List<Message>> = messageDao.getByChannel(channelId).map { list ->
         list.map { it.toDomain() }
     }
@@ -62,11 +70,11 @@ class MessageRepository @Inject constructor(
         return runCatching {
             val publicKeyBytes = Base64.decode(message.public_key, Base64.NO_WRAP)
             val keySpec = X509EncodedKeySpec(publicKeyBytes)
-            val publicKey = KeyFactory.getInstance("1.3.101.112", "BC").generatePublic(keySpec) // FIX: 1 — use BC provider for Ed25519 KeyFactory on Android
+            val publicKey = KeyFactory.getInstance("1.3.101.112", "BC").generatePublic(keySpec)
             SignatureUtil.verify(message.id + message.content, message.signature, publicKey)
         }.onFailure {
             Logger.w("Failed to verify signature for message ${message.id}", it)
-        }.getOrElse { false } // FIX: 1 — return false on any verification failure
+        }.getOrElse { false }
     }
 }
 
