@@ -15,11 +15,10 @@ import com.mesh.app.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -60,7 +59,7 @@ class BleScanner @Inject constructor(
             Logger.w("BLE scanner unavailable; skipping scan loop startup")
             return
         }
-        val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).build()
+        val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
         val callback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 val data = result.scanRecord?.getManufacturerSpecificData(Constants.BLE_MANUFACTURER_ID) ?: return
@@ -75,27 +74,16 @@ class BleScanner @Inject constructor(
         }
         scanCallback = callback
         loopJob = scope.launch(Dispatchers.Default) {
-            while (isActive) {
-                runCatching { bleScanner.startScan(null, settings, callback) }
-                    .onFailure { t ->
-                        if (t is SecurityException) {
-                            Logger.w("Missing permission while starting BLE scan; pausing scan loop", t)
-                            cancel()
-                        } else {
-                            Logger.e("Failed to start BLE scan", t)
-                        }
+            runCatching { bleScanner.startScan(null, settings, callback) }
+                .onFailure { t ->
+                    if (t is SecurityException) {
+                        Logger.w("Missing permission while starting BLE scan; pausing scan loop", t)
+                        cancel()
+                    } else {
+                        Logger.e("Failed to start BLE scan", t)
                     }
-                delay(Constants.BLE_SCAN_ACTIVE_MS)
-                runCatching { bleScanner.stopScan(callback) }
-                    .onFailure { t ->
-                        if (t is SecurityException) {
-                            Logger.w("Missing permission while stopping BLE scan", t)
-                        } else {
-                            Logger.e("Failed to stop BLE scan", t)
-                        }
-                    }
-                delay(Constants.BLE_SCAN_PAUSE_MS)
-            }
+                }
+            awaitCancellation()
         }
         Logger.i("BLE scanner started")
     }

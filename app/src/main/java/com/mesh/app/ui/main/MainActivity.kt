@@ -76,6 +76,8 @@ class MainActivity : ComponentActivity() {
             add(Manifest.permission.BLUETOOTH_SCAN)
             add(Manifest.permission.BLUETOOTH_CONNECT)
             add(Manifest.permission.BLUETOOTH_ADVERTISE)
+            // Some OEM builds still gate BLE scan result delivery behind location runtime permission.
+            add(Manifest.permission.ACCESS_FINE_LOCATION)
         } else {
             add(Manifest.permission.ACCESS_FINE_LOCATION)
         }
