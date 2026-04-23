@@ -65,7 +65,7 @@ class BleScanner @Inject constructor(
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 val data = result.scanRecord?.getManufacturerSpecificData(Constants.BLE_MANUFACTURER_ID) ?: return
                 if (data.size != Constants.BLE_PAYLOAD_SIZE) return
-                val prefix = data.copyOfRange(0, 4).joinToString("") { "%02x".format(it) }
+                val prefix = data.copyOfRange(0, 4).joinToString("") { "%02x".format(it.toInt() and 0xFF) }
                 val bloom = BloomFilter.fromByteArray(
                     data.copyOfRange(5, 5 + Constants.BLE_BLOOM_ADVERTISE_BYTES)
                 )
