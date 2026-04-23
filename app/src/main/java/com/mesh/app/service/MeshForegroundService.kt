@@ -17,12 +17,21 @@ import androidx.core.app.NotificationCompat
 import com.mesh.app.ble.BleAdvertiser
 import com.mesh.app.ble.BleConnectionManager
 import com.mesh.app.ble.BleScanner
+import com.mesh.app.core.identity.KeyManager
+import com.mesh.app.core.protocol.BloomFilter
+import com.mesh.app.core.protocol.HlcClock
+import com.mesh.app.core.protocol.Message
+import com.mesh.app.data.repository.MessageRepository
 import com.mesh.app.gateway.GatewayManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -32,15 +41,20 @@ class MeshForegroundService : Service() {
     @Inject lateinit var scanner: BleScanner
     @Inject lateinit var connectionManager: BleConnectionManager
     @Inject lateinit var gatewayManager: GatewayManager
+    @Inject lateinit var keyManager: KeyManager
+    @Inject lateinit var hlcClock: HlcClock
+    @Inject lateinit var messageRepository: MessageRepository
+    @Inject lateinit var bloomFilter: BloomFilter
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var wakeLock: PowerManager.WakeLock? = null
+    private var presenceJob: Job? = null
+    private var meshRunning = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
-        
         val notification = buildNotification()
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -51,13 +65,33 @@ class MeshForegroundService : Service() {
         } catch (e: Exception) {
             Log.e("MeshService", "Failed to start foreground service", e)
             stopSelf()
-            return
         }
+    }
 
-        // Check if Bluetooth is even available (common null on emulators)
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_DISABLE -> {
+                stopMesh()
+                stopSelf()
+                return START_NOT_STICKY
+            }
+
+            ACTION_ENABLE, null -> {
+                startMeshIfNeeded()
+                return START_STICKY
+            }
+
+            else -> return START_STICKY
+        }
+    }
+
+    private fun startMeshIfNeeded() {
+        if (meshRunning) return
+        meshRunning = true
+
         val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val adapter = bluetoothManager.adapter
-        
+
         if (adapter == null) {
             Log.w("MeshService", "Bluetooth not supported on this device/emulator. Running in mock/limited mode.")
         }
@@ -66,31 +100,58 @@ class MeshForegroundService : Service() {
             val pm = getSystemService(POWER_SERVICE) as PowerManager
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "mesh:ble")
             wakeLock?.acquire(10 * 60 * 1000L)
-            
-            // Only start BLE components if adapter is available
+
             if (adapter != null) {
                 advertiser.start()
                 scanner.start(scope)
                 connectionManager.start()
             }
             gatewayManager.start()
+            startPresencePings()
         } catch (e: Exception) {
             Log.e("MeshService", "Error initializing mesh components", e)
         }
     }
 
-    override fun onDestroy() {
+    private fun stopMesh() {
+        meshRunning = false
+        presenceJob?.cancel()
+        presenceJob = null
+
         try {
             advertiser.stop()
             scanner.stop()
             connectionManager.stop()
             gatewayManager.stop()
             wakeLock?.takeIf { it.isHeld }?.release()
+            wakeLock = null
         } catch (e: Exception) {
-            Log.e("MeshService", "Error during service destruction", e)
-        } finally {
-            scope.cancel()
+            Log.e("MeshService", "Error during service stop", e)
         }
+    }
+
+    private fun startPresencePings() {
+        if (presenceJob?.isActive == true) return
+        presenceJob = scope.launch {
+            while (isActive) {
+                runCatching {
+                    val content = "PING:${keyManager.getDeviceId()}"
+                    val ping = Message.create(content, CHANNEL_PRESENCE, keyManager, hlcClock.now())
+                    messageRepository.save(ping)
+                    bloomFilter.add(ping.id)
+                    advertiser.refreshBloomAndReadvertise()
+                    gatewayManager.publishUnpublished()
+                }.onFailure {
+                    Log.w("MeshService", "Presence ping failed", it)
+                }
+                delay(PING_INTERVAL_MS)
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        stopMesh()
+        scope.cancel()
         super.onDestroy()
     }
 
@@ -104,8 +165,15 @@ class MeshForegroundService : Service() {
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle("Mesh protocol active")
             .setContentText("Scanning and relaying nearby messages")
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // Safer standard icon
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setOngoing(true)
             .build()
+    }
+
+    companion object {
+        const val ACTION_ENABLE = "com.mesh.app.action.ENABLE_MESH"
+        const val ACTION_DISABLE = "com.mesh.app.action.DISABLE_MESH"
+        private const val CHANNEL_PRESENCE = "presence"
+        private const val PING_INTERVAL_MS = 15_000L
     }
 }
