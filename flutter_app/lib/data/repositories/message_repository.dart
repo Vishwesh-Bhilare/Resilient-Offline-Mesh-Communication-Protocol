@@ -38,4 +38,13 @@ class MessageRepository {
     }
     _messages[index] = _messages[index].copyWith(published: true);
   }
+
+  void update(MeshMessage message) {
+    final index = _messages.indexWhere((item) => item.id == message.id);
+    if (index < 0) {
+      _messages.add(message);
+      return;
+    }
+    _messages[index] = message;
+  }
 }
