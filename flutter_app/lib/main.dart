@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app/app_controller.dart';
 import 'ui/screens/chat_screen.dart';
-import 'ui/screens/logs_screen.dart';
+import 'ui/screens/main_screen.dart';
 
 void main() {
   runApp(const MeshFlutterApp());
@@ -50,51 +50,30 @@ class _MeshFlutterAppState extends State<MeshFlutterApp> {
       ),
       home: Scaffold(
         appBar: AppBar(
-          title: Text('Mesh Node ${_controller.deviceId.substring(0, 6)}'),
-          actions: [
-            Row(
-              children: [
-                Text(_controller.internetEnabled ? 'Online' : 'Offline'),
-                Switch(
-                  value: _controller.internetEnabled,
-                  onChanged: _controller.setInternetEnabled,
-                ),
-              ],
-            ),
-            const SizedBox(width: 6),
-          ],
+          title: const Text('Resilient Offline Mesh'),
         ),
         body: IndexedStack(
           index: _tabIndex,
           children: [
+            MainScreen(controller: _controller),
             ChatScreen(controller: _controller),
-            LogsScreen(controller: _controller),
           ],
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _tabIndex,
-          destinations: [
+          destinations: const [
             NavigationDestination(
-              icon: const Icon(Icons.forum_outlined),
-              selectedIcon: const Icon(Icons.forum),
-              label: 'Chat',
+              icon: Icon(Icons.hub_outlined),
+              selectedIcon: Icon(Icons.hub),
+              label: 'Main',
             ),
             NavigationDestination(
-              icon: Badge(
-                label: Text('${_controller.pendingCount}'),
-                isLabelVisible: _controller.pendingCount > 0,
-                child: const Icon(Icons.event_note_outlined),
-              ),
-              selectedIcon: const Icon(Icons.event_note),
-              label: 'Logs',
+              icon: Icon(Icons.forum_outlined),
+              selectedIcon: Icon(Icons.forum),
+              label: 'Chat room',
             ),
           ],
           onDestinationSelected: (index) => setState(() => _tabIndex = index),
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: _controller.publishPending,
-          icon: const Icon(Icons.cloud_upload_outlined),
-          label: const Text('Flush pending'),
         ),
       ),
     );

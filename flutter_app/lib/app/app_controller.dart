@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
@@ -25,7 +24,6 @@ class AppController extends ChangeNotifier {
     _clock = HybridLogicalClock.seed(_deviceId);
     _gateway = gateway ?? GatewayManager(_repository);
     _logs.add('[$_nowIso] App controller initialized for $_deviceId');
-    _startPeerHeartbeat();
   }
 
   final MessageRepository _repository;
@@ -33,19 +31,22 @@ class AppController extends ChangeNotifier {
   final Uuid _uuid;
   final String _deviceId;
   final List<String> _logs = [];
-  final List<Peer> _peers = [];
   late final GatewayManager _gateway;
   late HybridLogicalClock _clock;
 
-  Timer? _peerTimer;
+  int _presenceSyncCount = 0;
+  bool _meshEnabled = false;
   bool _internetEnabled = false;
   String _activeChannelId = 'general';
 
   String get deviceId => _deviceId;
+  bool get meshEnabled => _meshEnabled;
   bool get internetEnabled => _internetEnabled;
   String get activeChannelId => _activeChannelId;
+  int get presenceSyncCount => _presenceSyncCount;
+  int get knownDeviceCount => _runtime.knownDeviceIds.length;
   List<String> get logs => List.unmodifiable(_logs.reversed);
-  List<Peer> get peers => List.unmodifiable(_peers);
+  List<Peer> get peers => _runtime.peers;
   List<MeshMessage> get messages => _repository.list(channelId: _activeChannelId);
   int get pendingCount => _repository.pendingCount();
 
@@ -82,8 +83,47 @@ class AppController extends ChangeNotifier {
     if (inserted) {
       _logs.add('[$_nowIso] Queued message ${message.id.substring(0, 8)} (${message.body.length} chars)');
     }
-    if (_internetEnabled) {
+    if (_meshEnabled) {
+      _relayMessagesToPeers();
+    }
+    if (_internetEnabled && _meshEnabled) {
       publishPending();
+    }
+    notifyListeners();
+  }
+
+  Future<void> setMeshEnabled(bool enabled) async {
+    if (_meshEnabled == enabled) {
+      return;
+    }
+    _meshEnabled = enabled;
+    _logs.add('[$_nowIso] Mesh ${enabled ? 'enabled' : 'disabled'}');
+    if (enabled) {
+      _runtime.start(
+        selfId: _deviceId,
+        internetAvailable: _internetEnabled,
+        onPeerSeen: (peer) {
+          _logs.add('[$_nowIso] Presence ping from ${peer.alias} (${peer.latencyMs}ms)');
+          notifyListeners();
+        },
+        onRelayTick: (_) {
+          _relayMessagesToPeers();
+          notifyListeners();
+        },
+        onGatewaySync: (knownDeviceIds) async {
+          final published = await _gateway.publishPresence(
+            internetAvailable: _internetEnabled,
+            deviceIds: knownDeviceIds,
+          );
+          if (published > 0) {
+            _presenceSyncCount += published;
+            _logs.add('[$_nowIso] Gateway synced $published presence IDs');
+            notifyListeners();
+          }
+        },
+      );
+    } else {
+      _runtime.stop();
     }
     notifyListeners();
   }
@@ -91,7 +131,16 @@ class AppController extends ChangeNotifier {
   Future<void> setInternetEnabled(bool enabled) async {
     _internetEnabled = enabled;
     _logs.add('[$_nowIso] Internet ${enabled ? 'enabled' : 'disabled'}');
-    if (enabled) {
+    _runtime.setInternetAvailable(enabled, (knownDeviceIds) async {
+      final published = await _gateway.publishPresence(
+        internetAvailable: _internetEnabled,
+        deviceIds: knownDeviceIds,
+      );
+      if (published > 0) {
+        _presenceSyncCount += published;
+      }
+    });
+    if (enabled && _meshEnabled) {
       await publishPending();
     }
     notifyListeners();
@@ -104,38 +153,37 @@ class AppController extends ChangeNotifier {
         _logs.add('[$_nowIso] Published $messageId to HTTP gateway');
       },
     );
-    if (published == 0 && _internetEnabled) {
+    if (published == 0 && _internetEnabled && _meshEnabled) {
       _logs.add('[$_nowIso] No pending messages to publish');
     }
     notifyListeners();
   }
 
-  void _startPeerHeartbeat() {
-    _peerTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      final random = Random();
-      if (_peers.length < 4 && random.nextBool()) {
-        final id = _uuid.v4().split('-').first;
-        _peers.add(
-          Peer(
-            id: id,
-            alias: 'node-${id.substring(0, 4)}',
-            lastSeen: DateTime.now(),
-            latencyMs: 20 + random.nextInt(150),
-          ),
+  void _relayMessagesToPeers() {
+    final currentPeers = peers;
+    if (currentPeers.isEmpty) {
+      return;
+    }
+    for (final peer in currentPeers) {
+      for (final message in _repository.pending()) {
+        if (message.deliveredTo.contains(peer.id)) {
+          continue;
+        }
+        final hopped = message.hopTo(peer.id);
+        _repository.update(hopped);
+        _logs.add(
+          '[$_nowIso] Relayed ${message.id.substring(0, 6)} to ${peer.alias} (hop ${hopped.hops})',
         );
-      } else if (_peers.isNotEmpty) {
-        final index = random.nextInt(_peers.length);
-        _peers[index] = _peers[index].heartbeat(latencyMs: 20 + random.nextInt(150));
       }
-      _runtime.setConnectedPeerCount(_peers.length);
-      _logs.add('[$_nowIso] Peer heartbeat: ${_runtime.connectedPeerCount} peers reachable');
-      notifyListeners();
-    });
+    }
+    if (_internetEnabled) {
+      publishPending();
+    }
   }
 
   @override
   void dispose() {
-    _peerTimer?.cancel();
+    _runtime.stop();
     super.dispose();
   }
 }
