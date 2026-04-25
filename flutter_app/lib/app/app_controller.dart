@@ -104,7 +104,7 @@ class AppController extends ChangeNotifier {
     _logs.add('[$_nowIso] Mesh ${enabled ? 'enabled' : 'disabled'}');
 
     if (enabled) {
-      _runtime.start(
+      final started = await _runtime.start(
         selfId: _deviceId,
         internetAvailable: _internetEnabled,
         onPeerSeen: (peer) {
@@ -133,9 +133,17 @@ class AppController extends ChangeNotifier {
             _safeNotify();
           }
         },
+        onLog: (message) {
+          _logs.add('[$_nowIso] $message');
+          _safeNotify();
+        },
       );
+
+      if (!started) {
+        _meshEnabled = false;
+      }
     } else {
-      _runtime.stop();
+      await _runtime.stop();
     }
 
     _safeNotify();

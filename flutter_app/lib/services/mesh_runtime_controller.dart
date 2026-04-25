@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+
 import '../data/models/peer.dart';
 
 class MeshRuntimeController {
@@ -12,6 +16,8 @@ class MeshRuntimeController {
 
   Timer? _presenceTimer;
   Timer? _relayTimer;
+  StreamSubscription<List<ScanResult>>? _scanResultsSub;
+  StreamSubscription<BluetoothAdapterState>? _adapterStateSub;
 
   bool _running = false;
   bool _internetAvailable = false;
@@ -20,29 +26,79 @@ class MeshRuntimeController {
   bool get isRunning => _running;
   int get connectedPeerCount => _nearbyPeers.length;
   Set<String> get knownDeviceIds => Set.unmodifiable(_knownDeviceIds);
-  List<Peer> get peers => _nearbyPeers.values.toList(growable: false);
+  List<Peer> get peers => _nearbyPeers.values.toList(growable: false)
+    ..sort((a, b) => b.lastSeen.compareTo(a.lastSeen));
 
-  void start({
+  Future<bool> start({
     required String selfId,
     required bool internetAvailable,
     required void Function(Peer peer) onPeerSeen,
     required void Function(String peerId) onRelayTick,
     required void Function(Set<String> deviceIds) onGatewaySync,
-  }) {
-    if (_running) return;
+    required void Function(String message) onLog,
+  }) async {
+    if (_running) return true;
+
+    if (kIsWeb) {
+      onLog('Web does not support required BLE mesh runtime');
+      return false;
+    }
+
+    final granted = await _requestBlePermissions(onLog: onLog);
+    if (!granted) {
+      onLog('BLE permissions were denied. Mesh cannot start.');
+      return false;
+    }
 
     _running = true;
     _selfId = selfId;
     _internetAvailable = internetAvailable;
     _knownDeviceIds.add(selfId);
 
-    _presenceTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      final peer = _discoverOrRefreshPeer();
+    _adapterStateSub = FlutterBluePlus.adapterState.listen((state) {
+      onLog('Bluetooth adapter state: $state');
+    });
+
+    _scanResultsSub = FlutterBluePlus.scanResults.listen((results) {
+      for (final result in results) {
+        final peerId = result.device.remoteId.str;
+        if (peerId.isEmpty || peerId == _selfId) {
+          continue;
+        }
+
+        final alias = result.advertisementData.advName.isNotEmpty
+            ? result.advertisementData.advName
+            : 'peer-${peerId.replaceAll(':', '').substring(0, min(6, peerId.length))}';
+
+        final peer = Peer(
+          id: peerId,
+          alias: alias,
+          lastSeen: DateTime.now(),
+          latencyMs: max(0, 100 + (result.rssi * -1)),
+        );
+
+        _nearbyPeers[peerId] = peer;
+        _knownDeviceIds.add(peerId);
+        onPeerSeen(peer);
+      }
+    });
+
+    final adapterState = await FlutterBluePlus.adapterState.first;
+    if (adapterState != BluetoothAdapterState.on) {
+      onLog('Bluetooth is OFF. Turn it on and tap mesh button again.');
+      await stop();
+      return false;
+    }
+
+    await FlutterBluePlus.startScan(
+      timeout: const Duration(days: 1),
+      androidUsesFineLocation: true,
+      continuousUpdates: true,
+    );
+    onLog('Started hardware BLE scanning');
+
+    _presenceTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _evictStalePeers();
-
-      _knownDeviceIds.add(peer.id);
-      onPeerSeen(peer);
-
       if (_internetAvailable) {
         onGatewaySync(knownDeviceIds);
       }
@@ -58,14 +114,25 @@ class MeshRuntimeController {
         onRelayTick(shuffledPeers[i]);
       }
     });
+
+    return true;
   }
 
-  void stop() {
+  Future<void> stop() async {
     _running = false;
     _presenceTimer?.cancel();
     _relayTimer?.cancel();
     _presenceTimer = null;
     _relayTimer = null;
+
+    await _scanResultsSub?.cancel();
+    await _adapterStateSub?.cancel();
+    _scanResultsSub = null;
+    _adapterStateSub = null;
+
+    if (await FlutterBluePlus.isScanning.first) {
+      await FlutterBluePlus.stopScan();
+    }
   }
 
   void setInternetAvailable(
@@ -79,30 +146,23 @@ class MeshRuntimeController {
     }
   }
 
-  Peer _discoverOrRefreshPeer() {
-    if (_nearbyPeers.length < 5 && _random.nextDouble() > 0.35) {
-      final id = 'node-${_random.nextInt(1 << 20).toRadixString(16)}';
+  Future<bool> _requestBlePermissions({
+    required void Function(String message) onLog,
+  }) async {
+    final statuses = await [
+      Permission.bluetoothScan,
+      Permission.bluetoothConnect,
+      Permission.bluetoothAdvertise,
+      Permission.locationWhenInUse,
+    ].request();
 
-      final peer = Peer(
-        id: id,
-        alias: 'peer-${id.substring(id.length - 4)}',
-        lastSeen: DateTime.now(),
-        latencyMs: 20 + _random.nextInt(120),
-      );
-
-      _nearbyPeers[id] = peer;
-      return peer;
+    final denied = statuses.entries.where((entry) => !entry.value.isGranted).toList();
+    if (denied.isNotEmpty) {
+      onLog('Missing required permissions: ${denied.map((e) => e.key).join(', ')}');
+      return false;
     }
 
-    final targetId =
-        _nearbyPeers.keys.elementAt(_random.nextInt(_nearbyPeers.length));
-
-    final refreshed = _nearbyPeers[targetId]!.heartbeat(
-      latencyMs: 20 + _random.nextInt(120),
-    );
-
-    _nearbyPeers[targetId] = refreshed;
-    return refreshed;
+    return true;
   }
 
   void _evictStalePeers() {
