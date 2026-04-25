@@ -3,11 +3,16 @@ import '../models/message.dart';
 class MessageRepository {
   final List<MeshMessage> _messages = [];
 
-  List<MeshMessage> list({String? channelId}) {
+  void evict() {
     _messages.removeWhere((message) => message.isExpired);
+  }
+
+  List<MeshMessage> list({String? channelId}) {
+    evict();
+    final base = List<MeshMessage>.of(_messages);
     final selected = channelId == null
-        ? _messages
-        : _messages.where((message) => message.channelId == channelId).toList();
+        ? base
+        : base.where((message) => message.channelId == channelId).toList();
     selected.sort((a, b) => b.hlc.compareTo(a.hlc));
     return List.unmodifiable(selected);
   }
@@ -22,12 +27,12 @@ class MessageRepository {
   }
 
   int pendingCount() {
-    _messages.removeWhere((message) => message.isExpired);
+    evict();
     return _messages.where((message) => !message.published).length;
   }
 
   List<MeshMessage> pending() {
-    _messages.removeWhere((message) => message.isExpired);
+    evict();
     return _messages.where((message) => !message.published).toList(growable: false);
   }
 

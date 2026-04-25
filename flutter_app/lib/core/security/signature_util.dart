@@ -8,12 +8,13 @@ class SignatureUtil {
     return sha256.convert(bytes).toString();
   }
 
+  /// Verifies a signature using the shared symmetric key (= sender's deviceId).
+  /// Call with [sharedKey] = the sender's raw deviceId (NOT their sha256 public key).
   static bool verify({
     required String payload,
     required String signature,
-    required String publicKey,
+    required String sharedKey,
   }) {
-    final expected = sign(payload: payload, privateKey: publicKey);
-    return expected == signature;
+    return sign(payload: payload, privateKey: sharedKey) == signature;
   }
 }
