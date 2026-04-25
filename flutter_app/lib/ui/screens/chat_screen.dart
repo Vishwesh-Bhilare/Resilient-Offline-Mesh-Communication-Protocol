@@ -29,11 +29,17 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final messages = widget.controller.messages;
+    final meshEnabled = widget.controller.meshEnabled;
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          if (!meshEnabled)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text('Enable mesh on Main tab to relay messages.'),
+            ),
           Row(
             children: [
               Expanded(
@@ -86,10 +92,12 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               const SizedBox(width: 12),
               FilledButton.icon(
-                onPressed: () {
+                onPressed: meshEnabled
+                    ? () {
                   widget.controller.sendMessage(_composer.text);
                   _composer.clear();
-                },
+                }
+                    : null,
                 icon: const Icon(Icons.send),
                 label: const Text('Send'),
               ),

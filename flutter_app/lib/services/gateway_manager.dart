@@ -6,6 +6,7 @@ class GatewayManager {
   GatewayManager(this._repository);
 
   final MessageRepository _repository;
+  final Set<String> _publishedPresence = {};
 
   Future<int> publishPending({
     required bool internetAvailable,
@@ -22,5 +23,24 @@ class GatewayManager {
       onPublished?.call(message.id);
     }
     return pending.length;
+  }
+
+  Future<int> publishPresence({
+    required bool internetAvailable,
+    required Set<String> deviceIds,
+  }) async {
+    if (!internetAvailable || deviceIds.isEmpty) {
+      return 0;
+    }
+    var published = 0;
+    for (final id in deviceIds) {
+      if (_publishedPresence.contains(id)) {
+        continue;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 15));
+      _publishedPresence.add(id);
+      published++;
+    }
+    return published;
   }
 }
