@@ -20,6 +20,32 @@ flutter pub get
 flutter run
 ```
 
+### Build Android APK (Flutter app)
+
+If you want an APK from the Flutter client, build from `flutter_app/` (not the repository root Android project):
+
+```bash
+cd flutter_app
+flutter pub get
+flutter build apk --debug
+```
+
+If `flutter run` from your machine fails with a CMake/NDK error like `:app:configureCMakeDebug[arm64-v8a]` and `CMAKE_CXX_COMPILER not set`, this is typically local Android toolchain mismatch (NDK/CMake/JDK), not Dart code logic. In practice this is resolved by:
+
+1. `flutter doctor -v` and fix any Android toolchain issues.
+2. Use a stable NDK installed by Android Studio (commonly 27.x for recent Flutter stable), then point project/build tooling to that version.
+3. Recreate platform folders if needed:
+   ```bash
+   cd flutter_app
+   flutter create --platforms=android .
+   ```
+4. Clean and rebuild:
+   ```bash
+   flutter clean
+   flutter pub get
+   flutter run
+   ```
+
 > Note: BLE transport + platform services from the Kotlin app are represented as migration-safe service stubs and need platform channel implementation for production BLE behavior.
 
 ---

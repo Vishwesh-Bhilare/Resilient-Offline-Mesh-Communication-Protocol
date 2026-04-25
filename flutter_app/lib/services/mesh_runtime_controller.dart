@@ -12,6 +12,7 @@ class MeshRuntimeController {
 
   Timer? _presenceTimer;
   Timer? _relayTimer;
+
   bool _running = false;
   bool _internetAvailable = false;
   String _selfId = '';
@@ -28,9 +29,8 @@ class MeshRuntimeController {
     required void Function(String peerId) onRelayTick,
     required void Function(Set<String> deviceIds) onGatewaySync,
   }) {
-    if (_running) {
-      return;
-    }
+    if (_running) return;
+
     _running = true;
     _selfId = selfId;
     _internetAvailable = internetAvailable;
@@ -38,19 +38,22 @@ class MeshRuntimeController {
 
     _presenceTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       final peer = _discoverOrRefreshPeer();
+      _evictStalePeers();
+
       _knownDeviceIds.add(peer.id);
       onPeerSeen(peer);
+
       if (_internetAvailable) {
         onGatewaySync(knownDeviceIds);
       }
     });
 
     _relayTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (_nearbyPeers.isEmpty) {
-        return;
-      }
+      if (_nearbyPeers.isEmpty) return;
+
       final shuffledPeers = _nearbyPeers.keys.toList()..shuffle(_random);
       final relayCount = min(2, shuffledPeers.length);
+
       for (var i = 0; i < relayCount; i++) {
         onRelayTick(shuffledPeers[i]);
       }
@@ -65,8 +68,12 @@ class MeshRuntimeController {
     _relayTimer = null;
   }
 
-  void setInternetAvailable(bool available, void Function(Set<String>) onGatewaySync) {
+  void setInternetAvailable(
+    bool available,
+    void Function(Set<String>) onGatewaySync,
+  ) {
     _internetAvailable = available;
+
     if (_internetAvailable && _running) {
       onGatewaySync(knownDeviceIds);
     }
@@ -75,21 +82,34 @@ class MeshRuntimeController {
   Peer _discoverOrRefreshPeer() {
     if (_nearbyPeers.length < 5 && _random.nextDouble() > 0.35) {
       final id = 'node-${_random.nextInt(1 << 20).toRadixString(16)}';
+
       final peer = Peer(
         id: id,
         alias: 'peer-${id.substring(id.length - 4)}',
         lastSeen: DateTime.now(),
         latencyMs: 20 + _random.nextInt(120),
       );
+
       _nearbyPeers[id] = peer;
       return peer;
     }
 
-    final targetId = _nearbyPeers.keys.elementAt(_random.nextInt(_nearbyPeers.length));
+    final targetId =
+        _nearbyPeers.keys.elementAt(_random.nextInt(_nearbyPeers.length));
+
     final refreshed = _nearbyPeers[targetId]!.heartbeat(
       latencyMs: 20 + _random.nextInt(120),
     );
+
     _nearbyPeers[targetId] = refreshed;
     return refreshed;
+  }
+
+  void _evictStalePeers() {
+    final now = DateTime.now();
+
+    _nearbyPeers.removeWhere(
+      (_, peer) => now.difference(peer.lastSeen).inSeconds > 20,
+    );
   }
 }
