@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../app/app_controller.dart';
 
-class MainScreen extends StatelessWidget {
-  const MainScreen({
-    super.key,
-    required this.controller,
-  });
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
 
-  final AppController controller;
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  bool _toggling = false;
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<AppController>();
     final isOn = controller.meshEnabled;
     final peers = controller.peers;
 
@@ -30,18 +34,36 @@ class MainScreen extends StatelessWidget {
             height: 180,
             child: FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: isOn ? Colors.green : Colors.blueGrey,
+                backgroundColor: isOn
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outline,
                 textStyle: Theme.of(context).textTheme.headlineSmall,
               ),
-              onPressed: () => controller.setMeshEnabled(!isOn),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(isOn ? Icons.power_settings_new : Icons.power_off, size: 48),
-                  const SizedBox(height: 12),
-                  Text(isOn ? 'MESH ON' : 'MESH OFF'),
-                ],
-              ),
+              onPressed: _toggling
+                  ? null
+                  : () async {
+                      setState(() => _toggling = true);
+                      try {
+                        await controller.setMeshEnabled(!isOn);
+                      } finally {
+                        if (mounted) {
+                          setState(() => _toggling = false);
+                        }
+                      }
+                    },
+              child: _toggling
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isOn ? Icons.power_settings_new : Icons.power_off,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(isOn ? 'MESH ON' : 'MESH OFF'),
+                      ],
+                    ),
             ),
           ),
           const SizedBox(height: 24),

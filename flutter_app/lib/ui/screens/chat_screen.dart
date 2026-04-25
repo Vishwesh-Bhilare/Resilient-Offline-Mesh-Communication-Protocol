@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../app/app_controller.dart';
 import '../widgets/message_item.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({
-    super.key,
-    required this.controller,
-  });
-
-  final AppController controller;
+  const ChatScreen({super.key});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -28,8 +24,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final messages = widget.controller.messages;
-    final meshEnabled = widget.controller.meshEnabled;
+    final controller = context.watch<AppController>();
+    final messages = controller.messages;
+    final meshEnabled = controller.meshEnabled;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -49,12 +46,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     labelText: 'Channel',
                     prefixIcon: Icon(Icons.tag),
                   ),
-                  onSubmitted: widget.controller.switchChannel,
+                  onSubmitted: controller.switchChannel,
                 ),
               ),
               const SizedBox(width: 8),
               FilledButton.tonal(
-                onPressed: () => widget.controller.switchChannel(_channelController.text),
+                onPressed: () => controller.switchChannel(_channelController.text),
                 child: const Text('Switch'),
               ),
             ],
@@ -71,7 +68,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       final message = messages[index];
                       return MessageItem(
                         message: message,
-                        localDeviceId: widget.controller.deviceId,
+                        localDeviceId: controller.deviceId,
                       );
                     },
                   ),
@@ -91,15 +88,18 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              FilledButton.icon(
-                onPressed: meshEnabled
-                    ? () {
-                  widget.controller.sendMessage(_composer.text);
-                  _composer.clear();
-                }
-                    : null,
-                icon: const Icon(Icons.send),
-                label: const Text('Send'),
+              Tooltip(
+                message: meshEnabled ? '' : 'Enable mesh on the Main tab first',
+                child: FilledButton.icon(
+                  onPressed: meshEnabled
+                      ? () {
+                          controller.sendMessage(_composer.text);
+                          _composer.clear();
+                        }
+                      : null,
+                  icon: const Icon(Icons.send),
+                  label: const Text('Send'),
+                ),
               ),
             ],
           ),

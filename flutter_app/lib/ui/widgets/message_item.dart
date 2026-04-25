@@ -21,7 +21,9 @@ class MessageItem extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 340),
         child: Card(
           elevation: 0,
-          color: mine ? Colors.blue.shade50 : Colors.grey.shade100,
+          color: mine
+              ? Theme.of(context).colorScheme.primaryContainer
+              : Theme.of(context).colorScheme.surfaceContainerHighest,
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -60,7 +62,7 @@ class _Chip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.06),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(text, style: Theme.of(context).textTheme.labelSmall),

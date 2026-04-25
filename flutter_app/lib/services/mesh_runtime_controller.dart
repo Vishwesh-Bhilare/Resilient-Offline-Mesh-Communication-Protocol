@@ -26,8 +26,11 @@ class MeshRuntimeController {
   bool get isRunning => _running;
   int get connectedPeerCount => _nearbyPeers.length;
   Set<String> get knownDeviceIds => Set.unmodifiable(_knownDeviceIds);
-  List<Peer> get peers => _nearbyPeers.values.toList(growable: false)
-    ..sort((a, b) => b.lastSeen.compareTo(a.lastSeen));
+  List<Peer> get peers {
+    final list = _nearbyPeers.values.toList(growable: false);
+    list.sort((a, b) => b.lastSeen.compareTo(a.lastSeen));
+    return list;
+  }
 
   Future<bool> start({
     required String selfId,
@@ -59,29 +62,36 @@ class MeshRuntimeController {
       onLog('Bluetooth adapter state: $state');
     });
 
-    _scanResultsSub = FlutterBluePlus.scanResults.listen((results) {
-      for (final result in results) {
-        final peerId = result.device.remoteId.str;
-        if (peerId.isEmpty || peerId == _selfId) {
-          continue;
+    _scanResultsSub = FlutterBluePlus.scanResults.listen(
+      (results) {
+        for (final result in results) {
+          final peerId = result.device.remoteId.str;
+          if (peerId.isEmpty || peerId == _selfId) {
+            continue;
+          }
+
+          final alias = result.advertisementData.advName.isNotEmpty
+              ? result.advertisementData.advName
+              : 'peer-${peerId.replaceAll(':', '').substring(0, min(6, peerId.length))}';
+
+          final peer = Peer(
+            id: peerId,
+            alias: alias,
+            lastSeen: DateTime.now(),
+            latencyMs: max(5, (result.rssi.abs() - 30).clamp(5, 200)),
+          );
+
+          _nearbyPeers[peerId] = peer;
+          _knownDeviceIds.add(peerId);
+          onPeerSeen(peer);
         }
-
-        final alias = result.advertisementData.advName.isNotEmpty
-            ? result.advertisementData.advName
-            : 'peer-${peerId.replaceAll(':', '').substring(0, min(6, peerId.length))}';
-
-        final peer = Peer(
-          id: peerId,
-          alias: alias,
-          lastSeen: DateTime.now(),
-          latencyMs: max(0, 100 + (result.rssi * -1)),
-        );
-
-        _nearbyPeers[peerId] = peer;
-        _knownDeviceIds.add(peerId);
-        onPeerSeen(peer);
-      }
-    });
+      },
+      onError: (Object e) {
+        onLog('BLE scan error: $e');
+        stop().ignore();
+      },
+      cancelOnError: true,
+    );
 
     final adapterState = await FlutterBluePlus.adapterState.first;
     if (adapterState != BluetoothAdapterState.on) {
@@ -90,11 +100,16 @@ class MeshRuntimeController {
       return false;
     }
 
-    await FlutterBluePlus.startScan(
-      timeout: const Duration(days: 1),
-      androidUsesFineLocation: true,
-      continuousUpdates: true,
-    );
+    try {
+      await FlutterBluePlus.startScan(
+        androidUsesFineLocation: true,
+        continuousUpdates: true,
+      );
+    } on Exception catch (e) {
+      onLog('BLE scan failed to start: $e');
+      await stop();
+      return false;
+    }
     onLog('Started hardware BLE scanning');
 
     _presenceTimer = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -146,6 +161,11 @@ class MeshRuntimeController {
     }
   }
 
+  @visibleForTesting
+  void debugInjectPeer(Peer peer) {
+    _nearbyPeers[peer.id] = peer;
+  }
+
   Future<bool> _requestBlePermissions({
     required void Function(String message) onLog,
   }) async {
@@ -169,7 +189,7 @@ class MeshRuntimeController {
     final now = DateTime.now();
 
     _nearbyPeers.removeWhere(
-      (_, peer) => now.difference(peer.lastSeen).inSeconds > 20,
+      (_, peer) => now.difference(peer.lastSeen).inMilliseconds > 20000,
     );
   }
 }

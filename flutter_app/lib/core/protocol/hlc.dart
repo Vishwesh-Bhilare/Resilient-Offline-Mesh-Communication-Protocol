@@ -50,7 +50,7 @@ class HybridLogicalClock {
           1,
       (true, false) => logicalCounter + 1,
       (false, true) => remote.logicalCounter + 1,
-      (false, false) => 0,
+      (false, false) => 1,
     };
 
     return HybridLogicalClock(
