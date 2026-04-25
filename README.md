@@ -1,5 +1,31 @@
 # Resilient Offline Mesh Communication Protocol
 
+## Flutter rewrite status
+
+This repository has been migrated from the original Kotlin/Jetpack Compose Android client to a Flutter application scaffold under `flutter_app/`.
+
+### What moved to Flutter
+
+- Chat + logs UI shell.
+- Core protocol data model (`Message`, `HybridLogicalClock`).
+- Basic message signing/hash utility.
+- In-memory message repository with TTL cleanup and HLC ordering.
+- Gateway publish simulation when internet is toggled on.
+
+### Run the Flutter app
+
+```bash
+cd flutter_app
+flutter pub get
+flutter run
+```
+
+> Note: BLE transport + platform services from the Kotlin app are represented as migration-safe service stubs and need platform channel implementation for production BLE behavior.
+
+---
+
+# Resilient Offline Mesh Communication Protocol
+
 **BLE-based DTN with opportunistic gateway uplink**
 
 ## 1) Core idea
