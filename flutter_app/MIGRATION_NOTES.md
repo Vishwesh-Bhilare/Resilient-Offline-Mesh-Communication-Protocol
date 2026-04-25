@@ -1,16 +1,18 @@
-# Kotlin to Flutter migration notes
+# Flutter rewrite status
 
-This folder provides the Flutter replacement application layer for the original Android implementation.
+The application in `flutter_app/` is now a full Flutter-first rewrite of the original Android prototype.
 
-## Module mapping
+## Completed in this rewrite
 
-- `ui/main`, `ui/chat`, `ui/logs` (Kotlin) -> `lib/ui/screens/*` (Flutter widgets)
-- `core/protocol/HLC.kt`, `Message.kt` -> `lib/core/protocol/hlc.dart`, `lib/data/models/message.dart`
-- `gateway/GatewayManager.kt` -> `lib/services/gateway_manager.dart`
-- `service/MeshRuntimeController.kt` -> `lib/services/mesh_runtime_controller.dart`
+- New Flutter app shell with Material 3 UI and two-tab workflow (chat + logs).
+- End-to-end in-memory mesh message pipeline:
+  - Hybrid logical clock ordering.
+  - Message signing + verification helper.
+  - Repository with dedupe, expiration filtering, and pending publication tracking.
+- Runtime simulation for peer discovery heartbeats.
+- Gateway publication simulation that marks pending messages as published when internet mode is enabled.
+- Centralized `AppController` state orchestration.
 
-## Outstanding items
+## Current platform assumptions
 
-1. BLE advertiser/scanner/connection manager currently requires Flutter platform channels (`android/` + `ios/`) or a plugin strategy.
-2. Persistent storage (Room) should be replaced with `drift` or `sqflite` in a follow-up.
-3. WorkManager/background execution requires per-platform integration.
+This rewrite intentionally stays cross-platform and plugin-free. BLE transport, persistent DB, and background tasks are currently represented by simulation services and can be upgraded via platform plugins in follow-up work.

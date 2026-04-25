@@ -1,52 +1,58 @@
 import '../../core/protocol/hlc.dart';
 
 class MeshMessage {
-  MeshMessage({
+  const MeshMessage({
     required this.id,
-    required this.sender,
-    required this.publicKey,
-    required this.timestamp,
+    required this.channelId,
+    required this.senderId,
+    required this.body,
+    required this.createdAt,
     required this.hlc,
-    required this.ttlSeconds,
-    required this.content,
     required this.signature,
     this.hops = 0,
-    this.priority = 0,
-    this.channelId,
+    this.ttlSeconds = 86400,
     this.published = false,
+    this.deliveredTo = const {},
   });
 
   final String id;
-  final String sender;
-  final String publicKey;
-  final DateTime timestamp;
+  final String channelId;
+  final String senderId;
+  final String body;
+  final DateTime createdAt;
   final HybridLogicalClock hlc;
-  final int ttlSeconds;
-  final String content;
   final String signature;
   final int hops;
-  final int priority;
-  final String? channelId;
+  final int ttlSeconds;
   final bool published;
+  final Set<String> deliveredTo;
 
-  int get size => content.length;
+  bool get isExpired => DateTime.now().isAfter(createdAt.add(Duration(seconds: ttlSeconds)));
 
-  bool get isExpired => DateTime.now().isAfter(timestamp.add(Duration(seconds: ttlSeconds)));
+  MeshMessage hopTo(String peerId) {
+    return copyWith(
+      hops: hops + 1,
+      deliveredTo: {...deliveredTo, peerId},
+    );
+  }
 
-  MeshMessage copyWith({int? hops, bool? published}) {
+  MeshMessage copyWith({
+    int? hops,
+    bool? published,
+    Set<String>? deliveredTo,
+  }) {
     return MeshMessage(
       id: id,
-      sender: sender,
-      publicKey: publicKey,
-      timestamp: timestamp,
+      channelId: channelId,
+      senderId: senderId,
+      body: body,
+      createdAt: createdAt,
       hlc: hlc,
-      ttlSeconds: ttlSeconds,
-      content: content,
       signature: signature,
       hops: hops ?? this.hops,
-      priority: priority,
-      channelId: channelId,
+      ttlSeconds: ttlSeconds,
       published: published ?? this.published,
+      deliveredTo: deliveredTo ?? this.deliveredTo,
     );
   }
 }
