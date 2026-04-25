@@ -1,14 +1,9 @@
-import '../data/models/peer.dart';
-
 class MeshRuntimeController {
-  final List<Peer> _peers = [];
+  int _connectedPeerCount = 0;
 
-  List<Peer> get peers => List.unmodifiable(_peers);
+  int get connectedPeerCount => _connectedPeerCount;
 
-  void registerPeer(Peer peer) {
-    _peers.removeWhere((existing) => existing.deviceId == peer.deviceId);
-    _peers.add(peer);
+  void setConnectedPeerCount(int value) {
+    _connectedPeerCount = value;
   }
-
-  int get connectedPeerCount => _peers.length;
 }

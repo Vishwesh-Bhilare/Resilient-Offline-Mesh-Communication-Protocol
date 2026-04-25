@@ -1,16 +1,26 @@
+import 'dart:async';
+
 import '../data/repositories/message_repository.dart';
 
 class GatewayManager {
-  GatewayManager(this._messageRepository);
+  GatewayManager(this._repository);
 
-  final MessageRepository _messageRepository;
+  final MessageRepository _repository;
 
-  Future<void> publishPending({required bool internetAvailable}) async {
-    if (!internetAvailable) return;
-
-    for (final message in _messageRepository.getAll().where((m) => !m.published)) {
-      await Future<void>.delayed(const Duration(milliseconds: 40));
-      _messageRepository.markPublished(message.id);
+  Future<int> publishPending({
+    required bool internetAvailable,
+    void Function(String messageId)? onPublished,
+  }) async {
+    if (!internetAvailable) {
+      return 0;
     }
+
+    final pending = _repository.pending();
+    for (final message in pending) {
+      await Future<void>.delayed(const Duration(milliseconds: 45));
+      _repository.markPublished(message.id);
+      onPublished?.call(message.id);
+    }
+    return pending.length;
   }
 }

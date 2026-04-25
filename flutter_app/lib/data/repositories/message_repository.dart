@@ -3,29 +3,39 @@ import '../models/message.dart';
 class MessageRepository {
   final List<MeshMessage> _messages = [];
 
-  List<MeshMessage> getAll() {
-    _messages.removeWhere((m) => m.isExpired);
-    _messages.sort((a, b) {
-      if (a.hlc.physicalTimeMs != b.hlc.physicalTimeMs) {
-        return b.hlc.physicalTimeMs.compareTo(a.hlc.physicalTimeMs);
-      }
-      return b.hlc.logicalCounter.compareTo(a.hlc.logicalCounter);
-    });
-    return List.unmodifiable(_messages);
+  List<MeshMessage> list({String? channelId}) {
+    _messages.removeWhere((message) => message.isExpired);
+    final selected = channelId == null
+        ? _messages
+        : _messages.where((message) => message.channelId == channelId).toList();
+    selected.sort((a, b) => b.hlc.compareTo(a.hlc));
+    return List.unmodifiable(selected);
   }
 
-  bool insertIfMissing(MeshMessage message) {
-    if (_messages.any((m) => m.id == message.id)) {
+  bool addIfMissing(MeshMessage message) {
+    final alreadyExists = _messages.any((item) => item.id == message.id);
+    if (alreadyExists) {
       return false;
     }
     _messages.add(message);
     return true;
   }
 
-  void markPublished(String messageId) {
-    final idx = _messages.indexWhere((m) => m.id == messageId);
-    if (idx >= 0) {
-      _messages[idx] = _messages[idx].copyWith(published: true);
+  int pendingCount() {
+    _messages.removeWhere((message) => message.isExpired);
+    return _messages.where((message) => !message.published).length;
+  }
+
+  List<MeshMessage> pending() {
+    _messages.removeWhere((message) => message.isExpired);
+    return _messages.where((message) => !message.published).toList(growable: false);
+  }
+
+  void markPublished(String id) {
+    final index = _messages.indexWhere((message) => message.id == id);
+    if (index < 0) {
+      return;
     }
+    _messages[index] = _messages[index].copyWith(published: true);
   }
 }
