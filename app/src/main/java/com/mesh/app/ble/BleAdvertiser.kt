@@ -47,12 +47,17 @@ class BleAdvertiser @Inject constructor(
             Logger.w("BLE advertiser unavailable; cannot start advertising")
             return
         }
-        val settings = AdvertiseSettings.Builder()
-            .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER)
-            .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_LOW)
-            .setConnectable(true)
-            .build()
-        val cb = object : AdvertiseCallback() {}
+        val settings = buildSettings()
+        val cb = object : AdvertiseCallback() {
+            override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
+                Logger.i("BLE advertising started successfully")
+            }
+
+            override fun onStartFailure(errorCode: Int) {
+                Logger.e("BLE advertising failed to start, errorCode=$errorCode")
+                callback = null
+            }
+        }
         runCatching {
             bleAdvertiser.startAdvertising(settings, buildData(), cb)
             callback = cb
@@ -93,15 +98,7 @@ class BleAdvertiser @Inject constructor(
         }
         runCatching {
             bleAdvertiser.stopAdvertising(cb)
-            bleAdvertiser.startAdvertising(
-                AdvertiseSettings.Builder()
-                    .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER)
-                    .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_LOW)
-                    .setConnectable(true)
-                    .build(),
-                buildData(),
-                cb
-            )
+            bleAdvertiser.startAdvertising(buildSettings(), buildData(), cb)
         }.onFailure { t ->
             if (t is SecurityException) {
                 Logger.w("Missing permission while refreshing BLE advertising", t)
@@ -112,15 +109,23 @@ class BleAdvertiser @Inject constructor(
         }
     }
 
+    private fun buildSettings(): AdvertiseSettings =
+        AdvertiseSettings.Builder()
+            .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER)
+            .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_LOW)
+            .setConnectable(true)
+            .build()
+
     private fun buildData(): AdvertiseData {
         val payload = ByteArray(Constants.BLE_PAYLOAD_SIZE)
         val idPrefix = runCatching {
             keyManager.getDeviceId().take(8).chunked(2).map { it.toInt(16).toByte() }
-        }.getOrDefault(listOf(0, 0, 0, 0).map { it.toByte() }) // FIX: 5 — fallback when device ID retrieval/parsing fails
+        }.getOrDefault(listOf(0, 0, 0, 0).map { it.toByte() })
         for (i in idPrefix.indices) payload[i] = idPrefix[i]
         payload[4] = 0
-        System.arraycopy(bloomFilter.toByteArray(), 0, payload, 5, Constants.BLE_BLOOM_ADVERTISE_BYTES)
-        // has_internet: 1 = yes, 0 = no. Reader should treat any non-zero as true.
+        val bloomBytes = bloomFilter.toByteArray()
+        Logger.d("buildData: bloom non-zero bytes = ${bloomBytes.count { it != 0.toByte() }}")
+        System.arraycopy(bloomBytes, 0, payload, 5, Constants.BLE_BLOOM_ADVERTISE_BYTES)
         payload[25] = if (gatewayManager.hasInternet()) 1 else 0
         payload[26] = Constants.PROTOCOL_VERSION.toByte()
         return AdvertiseData.Builder().addManufacturerData(Constants.BLE_MANUFACTURER_ID, payload).build()
